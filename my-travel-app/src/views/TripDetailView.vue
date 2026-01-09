@@ -1,449 +1,619 @@
 <script setup lang="ts">
   import { ref, onMounted, computed } from 'vue'
-  import { useRoute } from 'vue-router'
+  import { useRoute, useRouter } from 'vue-router'
   import { supabase } from '../lib/supabaseClient'
   
   const route = useRoute()
+  const router = useRouter()
   const tripId = route.params.id
-  const activities = ref<any[]>([])
+  
+  // --- 共用變數 ---
   const tripName = ref('讀取中...')
   const activeTab = ref('itinerary')
   const tripDates = ref('')
   const subtitleRaw = ref('')
-  const editingSubtitle = ref(false)
-  const editingBanner = ref(false)
   const startDateRaw = ref('')
-  const endDateRaw = ref('')
-  const selectedDate = ref('') // 目前選中的日期
-  const initialMaxId = ref(0) // 記錄初始載入時的最大 id，用於區分新舊行程
+
+  function goBack() {
+    router.push('/')
+  }
+
+  // ==========================================
+  //  PART 4: 交通 (Transport)
+  // ==========================================
+  const transports = ref<any[]>([])
+  const showTransportForm = ref(false)
+  const isEditingTransport = ref(false)
+  const editingTransportId = ref<number | null>(null)
+
+  const transportForm = ref({
+    title: '', transport_type: '', duration: '', price: '', map_url: '',
+    steps: [] as any[] 
+  })
+
+  function openTransportForm(item?: any) {
+    if (item) {
+      isEditingTransport.value = true
+      editingTransportId.value = item.id
+      transportForm.value = { ...item, steps: item.steps || [] }
+    } else {
+      isEditingTransport.value = false
+      editingTransportId.value = null
+      transportForm.value = {
+        title: '', transport_type: '', duration: '', price: '', map_url: '',
+        steps: [{ title: '', desc: '', tip: '' }]
+      }
+    }
+    showTransportForm.value = true
+  }
+
+  function addTransStep() {
+    transportForm.value.steps.push({ title: '', desc: '', tip: '' })
+  }
+
+  function removeTransStep(idx: number) {
+    if (transportForm.value.steps.length > 1) {
+        transportForm.value.steps.splice(idx, 1)
+    }
+  }
+
+  async function handleSaveTransport() {
+    if (!transportForm.value.title) return alert('請填寫路線名稱')
+    const payload = { ...transportForm.value, trip_id: tripId }
+    delete (payload as any).id
+
+    let error = null
+    if (isEditingTransport.value && editingTransportId.value) {
+        const res = await supabase.from('transports').update(payload).eq('id', editingTransportId.value)
+        error = res.error
+    } else {
+        const res = await supabase.from('transports').insert([payload])
+        error = res.error
+    }
+    if (!error) { showTransportForm.value = false; loadTransportData() } else alert(error.message)
+  }
+
+  async function handleDeleteTransport() {
+     if (!editingTransportId.value || !confirm('確定刪除此路線？')) return
+     const { error } = await supabase.from('transports').delete().eq('id', editingTransportId.value)
+     if (!error) { showTransportForm.value = false; loadTransportData() }
+  }
+
+  async function loadTransportData() {
+    const { data } = await supabase.from('transports').select('*').eq('trip_id', tripId).order('id')
+    transports.value = data || []
+  }
+
   
-  // 1. 計算出所有有行程的日期 (不重複)
+  // ==========================================
+  //  PART 1: 景點 (Attractions)
+  // ==========================================
+  const attractions = ref<any[]>([])
+  const showAttractionForm = ref(false)
+  const isEditingAttraction = ref(false)
+  const editingAttractionId = ref<number | null>(null)
+
+  const attractionForm = ref({
+    title: '', subtitle: '', location_tag: '', description: '',
+    highlights: '', transport_info: '', must_eat: '', 
+    ticket_price: '', opening_hours: '', map_url: ''
+  })
+
+  function openAttractionForm(attr?: any) {
+    if (attr) {
+      isEditingAttraction.value = true
+      editingAttractionId.value = attr.id
+      attractionForm.value = { ...attr }
+    } else {
+      isEditingAttraction.value = false
+      editingAttractionId.value = null
+      attractionForm.value = {
+        title: '', subtitle: '', location_tag: '大阪', description: '', highlights: '', 
+        transport_info: '', must_eat: '', ticket_price: '免費', opening_hours: '10:00 - 20:00', map_url: ''
+      }
+    }
+    showAttractionForm.value = true
+  }
+
+  async function handleSaveAttraction() {
+    if (!attractionForm.value.title) return alert('請填寫景點名稱')
+    const payload = { ...attractionForm.value, trip_id: tripId }
+    delete (payload as any).id 
+    
+    let error = null
+    if (isEditingAttraction.value && editingAttractionId.value) {
+        const res = await supabase.from('attractions').update(payload).eq('id', editingAttractionId.value)
+        error = res.error
+    } else {
+        const res = await supabase.from('attractions').insert([payload])
+        error = res.error
+    }
+    if (!error) { showAttractionForm.value = false; loadAttractionsData() } else alert(error.message)
+  }
+
+  async function handleDeleteAttraction() {
+    if (!editingAttractionId.value || !confirm('確定刪除此景點？')) return
+    const { error } = await supabase.from('attractions').delete().eq('id', editingAttractionId.value)
+    if (!error) { showAttractionForm.value = false; loadAttractionsData() }
+  }
+
+  async function loadAttractionsData() {
+    const { data } = await supabase.from('attractions').select('*').eq('trip_id', tripId).order('id', { ascending: true })
+    attractions.value = data || []
+  }
+
+  function parseLines(text: string) {
+    if (!text) return []
+    return text.split('\n').filter(line => line.trim() !== '')
+  }
+
+  // ==========================================
+  //  PART 2: 行程 (Itinerary)
+  // ==========================================
+  const activities = ref<any[]>([])
+  const selectedDate = ref('')
+  const showActivityForm = ref(false)
+  const isEditingActivity = ref(false)
+  const editingActivityId = ref<number | null>(null)
+  
+  const activityForm = ref({
+    title: '', date: '', start_time: '', category: '景點', description: '', map_url: ''
+  })
+
   const uniqueDates = computed(() => {
     const dates = activities.value.map(a => a.date).filter(Boolean)
-    // 去除重複並排序
     return [...new Set(dates)].sort()
   })
-  
-  // 2. 根據選中日期過濾顯示的活動，並確保新增行程出現在現有行程下方
+
   const filteredActivities = computed(() => {
-    let filtered = activities.value
+    let filtered = activities.value.filter(a => a.date)
     if (selectedDate.value) {
-      filtered = activities.value.filter(a => a.date === selectedDate.value)
+      filtered = filtered.filter(a => a.date === selectedDate.value)
     }
-    // 排序：先按時間排序現有行程，然後新建立的行程（id > initialMaxId）一律排在最後
     return filtered.sort((a, b) => {
-      const aIsNew = a.id > initialMaxId.value
-      const bIsNew = b.id > initialMaxId.value
-      
-      // 如果其中一個是新建立的，新建立的排在最後
-      if (aIsNew && !bIsNew) return 1
-      if (!aIsNew && bIsNew) return -1
-      
-      // 如果都是新建立的或都不是新建立的，按時間排序
-      if (a.start_time && b.start_time) {
-        const timeCompare = a.start_time.localeCompare(b.start_time)
-        if (timeCompare !== 0) return timeCompare
-      } else if (a.start_time && !b.start_time) {
-        return -1
-      } else if (!a.start_time && b.start_time) {
-        return 1
-      }
-      // 時間相同或都沒有時間時，按 id 排序
-      return a.id - b.id
+       const timeA = a.start_time || ''
+       const timeB = b.start_time || ''
+       return timeA.localeCompare(timeB) || (a.id - b.id)
     })
   })
-  
-  // 3. 載入資料
-  async function loadData() {
-    // 抓行程名稱、日期與副標題
-    const { data: trip } = await supabase.from('trips').select('name, start_date, end_date, subtitle').eq('id', tripId).single()
-    if (trip) {
-      tripName.value = trip.name
-      subtitleRaw.value = trip.subtitle || ''
-      startDateRaw.value = trip.start_date || ''
-      endDateRaw.value = trip.end_date || ''
-      if (trip.start_date && trip.end_date) {
-        const f = (s: string) => { const d = new Date(s); return `${d.getMonth()+1}月${d.getDate()}日` }
-        tripDates.value = `${f(trip.start_date)} - ${f(trip.end_date)}`
+
+  function openActivityForm(act?: any) {
+    if (act) {
+      isEditingActivity.value = true
+      editingActivityId.value = act.id
+      activityForm.value = { ...act }
+    } else {
+      isEditingActivity.value = false
+      editingActivityId.value = null
+      activityForm.value = { 
+        title: '', date: selectedDate.value || startDateRaw.value, 
+        start_time: '', category: '景點', description: '', map_url: '' 
       }
     }
-  
-    // 抓所有活動
-    const { data } = await supabase.from('activities')
-      .select('*')
-      .eq('trip_id', tripId)
-      .order('date', { ascending: true })       // 先按日期排
-      .order('start_time', { ascending: true }) // 再按時間排
+    showActivityForm.value = true
+  }
+
+  async function handleSaveActivity() {
+    if (!activityForm.value.title || !activityForm.value.date) return alert('請填寫日期與名稱')
+    const payload = { ...activityForm.value, trip_id: tripId }
+    delete (payload as any).id
     
+    let error = null
+    if (isEditingActivity.value && editingActivityId.value) {
+        const res = await supabase.from('activities').update(payload).eq('id', editingActivityId.value)
+        error = res.error
+    } else {
+        const res = await supabase.from('activities').insert([payload])
+        error = res.error
+    }
+    if (!error) { showActivityForm.value = false; if (payload.date) selectedDate.value = payload.date; loadActivitiesData() } else alert(error.message)
+  }
+
+  async function handleDeleteActivity() {
+    if (!editingActivityId.value || !confirm('確定刪除？')) return
+    const { error } = await supabase.from('activities').delete().eq('id', editingActivityId.value)
+    if (!error) { showActivityForm.value = false; loadActivitiesData() }
+  }
+
+  async function loadActivitiesData() {
+    const { data } = await supabase.from('activities').select('*').eq('trip_id', tripId).order('date').order('start_time')
     activities.value = data || []
-    
-    // 只在第一次載入時記錄最大 id，用於區分新舊行程
-    // 這樣在當前會話中新增的行程（id > initialMaxId）會一直排在最後
-    if (initialMaxId.value === 0 && activities.value.length > 0) {
-      initialMaxId.value = Math.max(...activities.value.map(a => a.id))
-    }
-  
-    // 如果目前沒選日期，且有資料，預設選第一天
-    if (!selectedDate.value && uniqueDates.value.length > 0) {
-      selectedDate.value = uniqueDates.value[0]
-    }
+    if (!selectedDate.value && uniqueDates.value.length > 0) selectedDate.value = uniqueDates.value[0]
   }
-  
-  // 4. 新增/編輯表單
-  const showForm = ref(false)
-  const isEditing = ref(false)
-  const editingActivityId = ref<number | null>(null)
-  const formData = ref({
-    title: '',
-    date: '', 
-    start_time: '',
-    category: '景點',
-    description: '',
-    map_url: ''
-  })
-  
-  // 打開新增表單
-  function openAddForm() {
-    isEditing.value = false
-    editingActivityId.value = null
-    formData.value = {
-      title: '',
-      date: selectedDate.value, // 預設為當前分頁的日期
-      start_time: '',
-      category: '景點',
-      description: '',
-      map_url: ''
-    }
-    showForm.value = true
-  }
-  
-  // 打開編輯表單（點擊卡片時）
-  function openEditForm(activity: any) {
-    isEditing.value = true
-    editingActivityId.value = activity.id
-    formData.value = {
-      title: activity.title || '',
-      date: activity.date || '',
-      start_time: activity.start_time || '',
-      category: activity.category || '景點',
-      description: activity.description || '',
-      map_url: activity.map_url || ''
-    }
-    showForm.value = true
-  }
-  
-  // 新增行程
-  async function handleAdd() {
-    if (!formData.value.title || !formData.value.date) {
-      alert('請填寫日期與名稱')
-      return
-    }
-    
-    const { error } = await supabase.from('activities').insert([{ ...formData.value, trip_id: tripId }])
-    
-    if (!error) {
-      // 如果新增的日期不是當前選中的，自動切換過去
-      selectedDate.value = formData.value.date
-      showForm.value = false
-      // 清空表單
-      formData.value = { title: '', date: '', start_time: '', category: '景點', description: '', map_url: '' }
-      loadData()
-    } else {
-      alert('新增失敗：' + error.message)
-    }
-  }
-  
-  // 儲存修改
-  async function handleSave() {
-    if (!formData.value.title || !formData.value.date) {
-      alert('請填寫日期與名稱')
-      return
-    }
-    
-    if (!editingActivityId.value) return
-    
-    const { error } = await supabase
-      .from('activities')
-      .update({ ...formData.value })
-      .eq('id', editingActivityId.value)
-    
-    if (!error) {
-      // 如果修改的日期不是當前選中的，自動切換過去
-      selectedDate.value = formData.value.date
-      showForm.value = false
-      loadData()
-    } else {
-      alert('修改失敗：' + error.message)
-    }
-  }
-  
-  // 刪除行程
-  async function handleDelete() {
-    if (!editingActivityId.value) return
-    
-    if (!confirm('確定要刪除這個行程嗎？')) return
-    
-    const { error } = await supabase
-      .from('activities')
-      .delete()
-      .eq('id', editingActivityId.value)
-    
-    if (!error) {
-      showForm.value = false
-      loadData()
-    } else {
-      alert('刪除失敗：' + error.message)
-    }
-  }
-  
-  // 類別圖示
+
   const getIcon = (cat: string) => {
-    if (cat === '交通') return '🚃'
-    if (cat === '餐飲') return '🍱'
-    if (cat === '住宿') return '🏨'
-    return '📍'
+    if (cat === '交通') return '🚃'; if (cat === '餐飲') return '🍱'; if (cat === '住宿') return '🏨'; return '📍'
   }
 
-  // 儲存行程的開始/結束日期
-  async function saveTripDates() {
-    if (!startDateRaw.value || !endDateRaw.value) {
-      alert('請選擇開始與結束日期')
-      return
-    }
-    if (new Date(startDateRaw.value) > new Date(endDateRaw.value)) {
-      alert('開始日期不得晚於結束日期')
-      return
-    }
+  // ==========================================
+  //  PART 3: 住宿 (Accommodation)
+  // ==========================================
+  const accommodation = ref<any>(null)
+  const showAccForm = ref(false)
+  
+  const accForm = ref({
+    name: '', address: '', station: '', 
+    check_in_date: '', check_out_date: '',
+    check_in_time: '15:00 - 23:00', check_out_time: '10:00前',
+    google_map_url: '', transportation: [] as any[], transport_note: ''
+  })
 
-    const { error } = await supabase.from('trips').update({ start_date: startDateRaw.value, end_date: endDateRaw.value }).eq('id', tripId)
-    if (!error) {
-      const f = (s: string) => { const d = new Date(s); return `${d.getMonth()+1}月${d.getDate()}日` }
-      tripDates.value = `${f(startDateRaw.value)} - ${f(endDateRaw.value)}`
-      // reload activities/dates
-      loadData()
+  function openAccEdit() {
+    if (accommodation.value) {
+      accForm.value = { 
+          ...accommodation.value, 
+          transportation: accommodation.value.transportation || [{ step: 1, text: '' }],
+          station: accommodation.value.station || '' 
+      }
     } else {
-      alert('儲存失敗：' + error.message)
+      accForm.value = {
+        name: '新住宿地點', address: '', station: '', check_in_date: '', check_out_date: '',
+        check_in_time: '15:00', check_out_time: '10:00', google_map_url: '', transportation: [{ step: 1, text: '' }], transport_note: ''
+      }
     }
+    showAccForm.value = true
+  }
+  
+  function addTransportStep() { accForm.value.transportation.push({ step: accForm.value.transportation.length + 1, text: '' }) }
+  function removeTransportStep(index: number) { if (accForm.value.transportation.length > 1) { accForm.value.transportation.splice(index, 1); accForm.value.transportation.forEach((t, i) => t.step = i + 1) } }
+  
+  async function saveAccommodation() {
+    const upsertData = {
+      trip_id: tripId, 
+      ...accForm.value,
+      check_in_date: accForm.value.check_in_date || null,
+      check_out_date: accForm.value.check_out_date || null
+    }
+    if (accommodation.value?.id) (upsertData as any).id = accommodation.value.id
+    else delete (upsertData as any).id
+
+    const { error } = await supabase.from('accommodations').upsert(upsertData)
+    if (!error) { showAccForm.value = false; loadAccommodationData() } else alert(error.message)
+  }
+  
+  async function loadAccommodationData() {
+      const { data } = await supabase.from('accommodations').select('*').eq('trip_id', tripId).single()
+      accommodation.value = data || null
   }
 
-  // 儲存自訂副標題
-  async function saveSubtitle() {
-    const { error } = await supabase.from('trips').update({ subtitle: subtitleRaw.value }).eq('id', tripId)
-    if (!error) {
-      editingSubtitle.value = false
-    } else {
-      alert('儲存副標題失敗：' + error.message)
-    }
-  }
+  const displayCheckInDate = computed(() => accommodation.value?.check_in_date ? `${new Date(accommodation.value.check_in_date).getMonth() + 1}月${new Date(accommodation.value.check_in_date).getDate()}日` : '未設定')
+  const stayDuration = computed(() => (accommodation.value?.check_in_date && accommodation.value?.check_out_date) ? Math.max(0, Math.ceil((new Date(accommodation.value.check_out_date).getTime() - new Date(accommodation.value.check_in_date).getTime()) / 86400000)) : 1)
 
-  function cancelEditSubtitle() {
-    editingSubtitle.value = false
-    // reload subtitle from server in case it changed
-    loadData()
-  }
-
-  // 儲存 banner（包含開始/結束日期與副標題）
-  async function saveBanner() {
-    if (!startDateRaw.value || !endDateRaw.value) {
-      alert('請選擇開始與結束日期')
-      return
+  // ==========================================
+  //  全部載入
+  // ==========================================
+  async function loadData() {
+    const { data: trip } = await supabase.from('trips').select('*').eq('id', tripId).single()
+    if (trip) {
+        tripName.value = trip.name
+        subtitleRaw.value = trip.subtitle || ''
+        startDateRaw.value = trip.start_date
+        if (trip.start_date && trip.end_date) {
+            const f = (s: string) => { const d = new Date(s); return `${d.getMonth()+1}月${d.getDate()}日` }
+            tripDates.value = `${f(trip.start_date)} - ${f(trip.end_date)}`
+        }
     }
-    if (new Date(startDateRaw.value) > new Date(endDateRaw.value)) {
-      alert('開始日期不得晚於結束日期')
-      return
-    }
-
-    const { error } = await supabase.from('trips').update({ start_date: startDateRaw.value, end_date: endDateRaw.value, subtitle: subtitleRaw.value }).eq('id', tripId)
-    if (!error) {
-      const f = (s: string) => { const d = new Date(s); return `${d.getMonth()+1}月${d.getDate()}日` }
-      tripDates.value = `${f(startDateRaw.value)} - ${f(endDateRaw.value)}`
-      editingBanner.value = false
-      loadData()
-    } else {
-      alert('儲存失敗：' + error.message)
-    }
-  }
-
-  function cancelBannerEdit() {
-    editingBanner.value = false
-    loadData()
+    loadAttractionsData()
+    loadActivitiesData()
+    loadAccommodationData()
+    loadTransportData()
   }
   
   onMounted(loadData)
-  </script>
+</script>
   
-  <template>
-    <div class="min-h-screen bg-slate-50 pb-24 font-sans">
-
-      <div class="banner rounded-2xl overflow-hidden mb-4 mx-4">
-        <div class="banner-inner p-5 text-white">
-          <h1 class="banner-title">{{ tripName }}</h1>
-          <div class="mt-2">
-            <div v-if="!editingBanner" class="flex items-center gap-3">
-              <p class="banner-sub">{{ tripDates ? tripDates : '' }}<span v-if="tripDates && subtitleRaw"> | </span>{{ subtitleRaw }}</p>
-              <button @click="editingBanner = true" class="text-sm bg-white/20 px-2 py-1 rounded">編輯</button>
-            </div>
-
-            <div v-else class="bg-white/10 p-3 rounded-2xl flex flex-col gap-2">
-              <div class="flex gap-2 items-center">
-                <input v-model="startDateRaw" type="date" class="w-36 bg-white text-black px-3 py-2 rounded-xl border border-white/30" />
-                <span class="text-white/80">〜</span>
-                <input v-model="endDateRaw" type="date" class="w-36 bg-white text-black px-3 py-2 rounded-xl border border-white/30" />
-              </div>
-              <input v-model="subtitleRaw" class="rounded px-2 py-2 text-sm text-black" placeholder="輸入副標題" />
-              <div class="flex gap-2 justify-end">
-                <button @click="saveBanner" class="bg-white text-red-600 px-3 py-1 rounded font-bold">儲存</button>
-                <button @click="cancelBannerEdit" class="bg-white/20 text-white px-3 py-1 rounded">取消</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <nav class="tabs bg-white rounded-2xl shadow-sm mb-6 mx-4 flex justify-between px-3 py-3">
-        <button class="tab" :class="{ active: activeTab==='itinerary' }" @click="activeTab='itinerary'">
-          <div class="icon">🗓️</div>
-          <div class="label">行程</div>
+<template>
+  <div class="min-h-screen bg-[#FDFCF8] pb-24 font-sans text-stone-700">
+    
+    <div class="px-4 py-2 flex items-center">
+        <button @click="goBack" class="flex items-center gap-1 text-[#606C38] font-bold text-sm hover:text-[#283618] transition">
+            <span class="text-lg">‹</span> 返回列表
         </button>
-        <button class="tab" :class="{ active: activeTab==='accommodation' }" @click="activeTab='accommodation'">
-          <div class="icon">🛏️</div>
-          <div class="label">住宿</div>
-        </button>
-        <button class="tab" :class="{ active: activeTab==='attractions' }" @click="activeTab='attractions'">
-          <div class="icon">📍</div>
-          <div class="label">景點</div>
-        </button>
-        <button class="tab" :class="{ active: activeTab==='transport' }" @click="activeTab='transport'">
-          <div class="icon">🚌</div>
-          <div class="label">交通</div>
-        </button>
-        <button class="tab" :class="{ active: activeTab==='info' }" @click="activeTab='info'">
-          <div class="icon">ℹ️</div>
-          <div class="label">資訊</div>
-        </button>
-      </nav>
+    </div>
 
-      <div>
-        <section v-show="activeTab==='itinerary'">
-          <div class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">
-            <div class="p-4 flex items-center justify-between">
-              <router-link to="/" class="text-blue-600 font-bold text-sm">← 返回</router-link>
-              <h1 class="font-black text-lg text-slate-800">{{ tripName }}</h1>
-              <div class="w-8"></div> </div>
-
-            <div class="flex overflow-x-auto px-4 pb-3 gap-3 no-scrollbar">
-              <button 
-                v-for="date in uniqueDates" :key="date"
-                @click="selectedDate = date"
-                class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all shadow-sm border"
-                :class="selectedDate === date ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200'"
-              >
-                {{ date.slice(5) }}
-              </button>
-            </div>
-          </div>
-
-          <div class="p-4 space-y-4">
-            <div v-for="act in filteredActivities" :key="act.id" 
-                 @click="openEditForm(act)"
-                 class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex gap-4 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all">
-              
-              <div class="flex flex-col items-center w-14 border-r border-slate-100 pr-2">
-                <span class="text-blue-600 font-black font-mono text-sm">{{ act.start_time }}</span>
-                <span class="text-[10px] text-slate-400 mt-1">{{ act.category }}</span>
-              </div>
-
-              <div class="flex-1">
-                <div class="flex items-center gap-1 mb-1">
-                  <span>{{ getIcon(act.category) }}</span>
-                  <h3 class="font-bold text-slate-800">{{ act.title }}</h3>
-                </div>
-                <p class="text-slate-500 text-xs leading-relaxed">{{ act.description }}</p>
-                
-                <a v-if="act.map_url" :href="act.map_url" target="_blank"
-                   class="inline-block mt-3 text-[10px] bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full font-bold">
-                  📍 開啟導航
-                </a>
-              </div>
-            </div>
-
-            <div v-if="filteredActivities.length === 0" class="text-center py-20 text-slate-400">
-              <p v-if="uniqueDates.length === 0">還沒有任何行程，快按右下角新增！</p>
-              <p v-else>這一天沒有行程喔</p>
-            </div>
-          </div>
-
-          <button 
-            @click="openAddForm"
-            class="fixed bottom-8 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center text-3xl pb-1 hover:scale-110 active:scale-90 transition-transform z-20"
-          >
-            +
-          </button>
-
-          <div v-if="showForm" class="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm" @click.self="showForm = false">
-            <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
-              <div class="flex justify-between items-center mb-5">
-                <h3 class="text-lg font-black text-slate-800">{{ isEditing ? '編輯行程' : '新增行程' }}</h3>
-                <button @click="showForm = false" class="text-slate-400 text-2xl">×</button>
-              </div>
-              
-              <div class="space-y-3">
-                <input v-model="formData.date" type="date" class="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" />
-                
-                <div class="flex gap-2">
-                  <input v-model="formData.start_time" placeholder="時間 (09:00)" class="w-1/3 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                  <select v-model="formData.category" class="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>景點</option><option>交通</option><option>餐飲</option><option>住宿</option>
-                  </select>
-                </div>
-
-                <input v-model="formData.title" placeholder="活動名稱 (如: 水戶偕樂園)" class="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                <textarea v-model="formData.description" placeholder="備註 / 交通方式" class="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 h-20"></textarea>
-                <input v-model="formData.map_url" placeholder="Google Maps 連結" class="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                
-                <div class="flex gap-3 mt-4">
-                  <button 
-                    v-if="isEditing"
-                    @click="handleDelete" 
-                    class="flex-1 bg-red-500 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-red-200 active:scale-95 transition-transform"
-                  >
-                    刪除
-                  </button>
-                  <button 
-                    @click="isEditing ? handleSave() : handleAdd()" 
-                    class="flex-1 bg-blue-600 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-95 transition-transform"
-                  >
-                    {{ isEditing ? '儲存' : '確認加入' }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section v-show="activeTab!=='itinerary'" class="bg-white p-8 rounded-2xl shadow-sm text-slate-400 text-center mx-4">
-          <!-- 其他分頁暫時留白 -->
-        </section>
+    <div class="banner rounded-2xl overflow-hidden mb-4 mx-4 shadow-lg shadow-stone-200 bg-gradient-to-r from-[#606C38] to-[#283618]">
+      <div class="p-6 text-white">
+        <h1 class="text-xl font-extrabold tracking-wide">{{ tripName }}</h1>
+        <p class="text-sm opacity-90 mt-1 font-medium">{{ tripDates }} <span v-if="subtitleRaw">| {{ subtitleRaw }}</span></p>
       </div>
     </div>
-  </template>
-  
-  <style scoped>
-  /* 隱藏橫向捲軸但保留功能 */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .banner { background: linear-gradient(180deg,#a3181a,#b71c1c); }
-  .banner-inner { color: white; }
-  .banner-title { font-size: 1.25rem; font-weight: 800; margin: 0; }
-  .banner-sub { font-size: 0.85rem; margin-top: 6px; opacity: 0.95 }
-  .tabs { gap: 4px; }
-  .tab { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; background:transparent; border:none; padding:6px 8px; border-radius:12px; color:#6b7280; }
-  .tab .icon { font-size:18px }
-  .tab .label { font-size:12px; margin-top:4px }
-  .tab.active { background: linear-gradient(180deg,#fef2f2,#fff1f1); color:#b91c1c; box-shadow:0 1px 0 rgba(0,0,0,0.03); }
-  </style>
+
+    <nav class="bg-white rounded-2xl shadow-sm border border-stone-100 mb-4 mx-4 flex justify-between px-3 py-2 sticky top-2 z-20">
+      <button class="tab" :class="{ active: activeTab==='itinerary' }" @click="activeTab='itinerary'"><div class="icon">🗓️</div><div class="label">行程</div></button>
+      <button class="tab" :class="{ active: activeTab==='attractions' }" @click="activeTab='attractions'"><div class="icon">📍</div><div class="label">景點</div></button>
+      <button class="tab" :class="{ active: activeTab==='accommodation' }" @click="activeTab='accommodation'"><div class="icon">🛏️</div><div class="label">住宿</div></button>
+      <button class="tab" :class="{ active: activeTab==='transport' }" @click="activeTab='transport'"><div class="icon">🚌</div><div class="label">交通</div></button>
+    </nav>
+
+    <section v-show="activeTab==='transport'" class="px-4 pb-20">
+        <div class="mb-4 pl-1">
+             <h2 class="text-lg font-bold text-[#BC4749] flex items-center gap-2"><span class="text-xl">🚆</span> 交通詳細指南</h2>
+             <span class="text-xs text-stone-400 block mt-1">每段路線附詳細搭乘步驟</span>
+        </div>
+
+        <div class="space-y-6">
+            <div v-for="trans in transports" :key="trans.id" class="bg-white rounded-xl shadow-md border border-stone-100 overflow-hidden relative group hover:shadow-lg transition-shadow">
+                
+                <button @click="openTransportForm(trans)" class="absolute top-3 right-3 z-10 bg-white/20 hover:bg-white/40 text-white p-1.5 rounded text-xs backdrop-blur-sm transition border border-white/30">
+                    編輯
+                </button>
+
+                <div class="bg-gradient-to-r from-[#6B905C] to-[#463F3A] text-white p-4">
+                    <div class="flex items-start gap-3">
+                        <div class="text-2xl mt-0.5 text-[#FFE8D6]">✈️</div> <div>
+                            <h3 class="font-bold text-lg text-white drop-shadow-sm">{{ trans.title }}</h3>
+                            <div class="text-[#F0EFEB] text-xs mt-1 flex gap-2 opacity-90 font-medium">
+                                <span v-if="trans.duration">{{ trans.duration }}</span>
+                                <span v-if="trans.duration && trans.transport_type">|</span>
+                                <span v-if="trans.transport_type">{{ trans.transport_type }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-5">
+                    <div class="relative border-l-2 border-[#BC4749]/30 ml-2 space-y-8 my-2">
+                        <div v-for="(step, idx) in trans.steps" :key="idx" class="ml-6 relative">
+                            <span class="absolute -left-[31px] top-1 w-4 h-4 bg-[#BC4749] rounded-full border-2 border-white shadow-sm"></span>
+                            
+                            <h4 class="font-bold text-[#283618] text-sm mb-1">{{ Number(idx) + 1 }}. {{ step.title }}</h4>
+                            <p class="text-xs text-stone-500 leading-relaxed">{{ step.desc }}</p>
+
+                            <div v-if="step.tip" class="mt-2 bg-[#FEFAE0] border-l-4 border-[#D4A373] p-2 text-[11px] text-[#606C38] rounded-r">
+                                <span class="font-bold text-[#BC4749]">💡 提示：</span>{{ step.tip }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-stone-50 p-3 rounded-lg flex justify-between items-center mt-6 mb-3 border border-stone-100">
+                        <span class="text-xs text-stone-400">預估票價</span>
+                        <span class="text-[#BC4749] font-bold text-lg">{{ trans.price }}</span>
+                    </div>
+
+                    <a v-if="trans.map_url" :href="trans.map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-sm active:scale-[0.99] transition-all flex justify-center items-center gap-2">
+                        <span>🗺️</span> Google 地圖查看路線
+                    </a>
+                </div>
+            </div>
+
+             <div v-if="transports.length === 0" class="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl bg-stone-50">
+                <p class="text-stone-400 mb-2">尚未建立交通路線</p>
+                <button @click="openTransportForm()" class="text-[#BC4749] font-bold hover:underline">新增第一條路線</button>
+            </div>
+        </div>
+        
+        <button @click="openTransportForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+    </section>
+
+    <section v-show="activeTab==='attractions'" class="px-4 pb-20">
+         <div class="flex justify-between items-center mb-4 pl-1"><h2 class="text-lg font-bold text-[#283618]">景點詳細介紹</h2><span class="text-xs text-stone-400">點擊地圖按鈕直接導航</span></div>
+         <div class="grid gap-6">
+            <div v-for="attr in attractions" :key="attr.id" class="bg-white rounded-xl shadow-md overflow-hidden border border-stone-100 relative group hover:shadow-lg transition-all">
+                <button @click="openAttractionForm(attr)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">✏️</button>
+                <!-- <div class="bg-gradient-to-br from-[#A3B18A] to-[#588157] p-6 text-white pt-10 pb-8 relative">
+                <div v-if="attr.location_tag" class="absolute top-6 left-6 bg-[#FDFCF8] text-[#344E41] text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                    {{ attr.location_tag }}
+                </div>
+                
+                <h3 class="text-2xl font-bold mb-1 mt-4 text-white">{{ attr.title }}</h3>
+                <p class="text-sm text-[#DAD7CD] font-medium">{{ attr.subtitle }}</p> -->
+
+                <div class="bg-gradient-to-br from-[#D4A373] to-[#B08968] p-6 text-white pt-10 pb-8 relative">
+                <div v-if="attr.location_tag" class="absolute top-6 left-6 bg-[#FEFAE0] text-[#9C6644] text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                    {{ attr.location_tag }}
+                </div>
+                
+                <h3 class="text-2xl font-bold mb-1 mt-4 text-white shadow-sm">{{ attr.title }}</h3>
+                <p class="text-sm text-[#FEFAE0]/90 font-medium">{{ attr.subtitle }}</p>
+            </div>            
+
+                <div class="p-5">
+                    <p class="text-stone-600 text-sm leading-relaxed mb-5 text-justify">{{ attr.description || '暫無描述' }}</p>
+                    
+                    <!-- <div class="bg-[#FEFAE0] rounded-lg p-4 mb-5 border border-[#E9EDC9]" v-if="attr.highlights || attr.must_eat">
+                        <h4 class="text-sm font-bold text-[#D4A373] mb-2 flex items-center gap-1"><span>✨</span> 必訪亮點 & 美食</h4>
+                        <ul class="space-y-2">
+                            <li v-for="(line, idx) in parseLines(attr.highlights)" :key="'h'+idx" class="flex items-start gap-2 text-sm text-stone-700"><span class="mt-0.5 text-xs text-[#BC4749]">●</span><span>{{ line }}</span></li>
+                            <li v-for="(line, idx) in parseLines(attr.must_eat)" :key="'m'+idx" class="flex items-start gap-2 text-sm text-stone-700"><span class="mt-0.5 text-xs text-[#BC4749]">🍽️</span><span>{{ line }}</span></li>
+                        </ul>
+                    </div> -->
+                    <div class="bg-[#FEFAE0] rounded-lg p-4 mb-5 border border-[#E9EDC9]" v-if="attr.highlights || attr.must_eat">
+                        <h4 class="text-sm font-bold text-[#A98467] mb-2 flex items-center gap-1"><span>✨</span> 必訪亮點 & 美食</h4>
+                        <ul class="space-y-2">
+                            <li v-for="(line, idx) in parseLines(attr.highlights)" :key="'h'+idx" class="flex items-start gap-2 text-sm text-stone-700">
+                                <span class="mt-0.5 text-xs text-[#A98467]">●</span><span>{{ line }}</span>
+                            </li>
+                            <li v-for="(line, idx) in parseLines(attr.must_eat)" :key="'m'+idx" class="flex items-start gap-2 text-sm text-stone-700">
+                                <span class="mt-0.5 text-xs text-[#A98467]">🍽️</span><span>{{ line }}</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-y-3 text-sm text-stone-600 mb-6">
+                         <div class="flex items-start gap-3" v-if="attr.transport_info"><div class="w-5 text-center text-lg">🚇</div><div class="flex-1 border-b border-stone-100 pb-2">{{ attr.transport_info }}</div></div>
+                         <div class="flex items-start gap-3" v-if="attr.opening_hours"><div class="w-5 text-center text-lg">⏰</div><div class="flex-1 border-b border-stone-100 pb-2">{{ attr.opening_hours }}</div></div>
+                         <div class="flex items-start gap-3" v-if="attr.ticket_price"><div class="w-5 text-center text-lg">🎫</div><div class="flex-1">{{ attr.ticket_price }}</div></div>
+                    </div>
+                    
+                    <a v-if="attr.map_url" :href="attr.map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-md active:scale-[0.98] transition-all flex justify-center items-center gap-2"><span>📍</span> Google 地圖導航</a>
+                </div>
+            </div>
+            <div v-if="attractions.length === 0" class="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl bg-stone-50"><p class="text-stone-400 mb-2">這裡空空如也</p><button @click="openAttractionForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個景點</button></div>
+        </div>
+        <button @click="openAttractionForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+    </section>
+
+    <section v-show="activeTab==='itinerary'">
+         <div class="sticky top-16 z-10 bg-[#FDFCF8]/95 backdrop-blur-sm border-b border-stone-200 pt-2">
+            <div class="flex overflow-x-auto px-4 pb-3 gap-3 no-scrollbar">
+            <button v-for="date in uniqueDates" :key="date" @click="selectedDate = date" class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all shadow-sm border" :class="selectedDate === date ? 'bg-[#283618] text-white border-[#283618]' : 'bg-white text-stone-500 border-stone-200 hover:border-[#606C38]'">{{ date.slice(5) }}</button>
+            </div>
+        </div>
+        <div class="p-4 space-y-4">
+            <div v-for="act in filteredActivities" :key="act.id" @click="openActivityForm(act)" class="bg-white p-4 rounded-2xl shadow-sm border border-stone-100 flex gap-4 cursor-pointer hover:border-[#D4A373] transition-colors">
+                <div class="flex flex-col items-center w-14 border-r border-stone-100 pr-2">
+                    <span class="text-[#BC4749] font-black font-mono text-sm">{{ act.start_time || '--:--' }}</span>
+                    <span class="text-[10px] text-stone-400 mt-1">{{ act.category }}</span>
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-1 mb-1"><span>{{ getIcon(act.category) }}</span><h3 class="font-bold text-[#283618]">{{ act.title }}</h3></div>
+                    <p class="text-stone-500 text-xs mt-1 line-clamp-2">{{ act.description }}</p>
+                </div>
+            </div>
+            <div v-if="filteredActivities.length === 0" class="text-center py-20 text-stone-400"><p>這一天還沒有行程喔</p></div>
+        </div>
+        <button @click="openActivityForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-20 transition hover:scale-110 active:scale-95">+</button>
+    </section>
+
+    <section v-show="activeTab==='accommodation'" class="px-4 pb-10">
+        <div class="flex justify-between items-center mb-4 pl-1"><h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2"><span class="text-2xl">🏨</span> 住宿資訊</h2><button v-if="accommodation" @click="openAccEdit" class="text-sm bg-white border border-stone-200 text-stone-600 px-3 py-1.5 rounded-lg shadow-sm font-bold active:scale-95 transition hover:bg-stone-50">✏️ 編輯</button></div>
+        <div v-if="!accommodation" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300"><p class="text-stone-400 mb-4">尚未建立住宿資訊</p><button @click="openAccEdit" class="bg-[#283618] text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-[#606C38] transition">+ 新增住宿</button></div>
+        <div v-else>
+            <div class="bg-white rounded-xl shadow-md border border-stone-100 overflow-hidden mb-6">
+                <div class="bg-[#6F4E37] text-white p-4">
+                    <div class="flex items-start gap-3"><div class="bg-white/20 p-2 rounded-lg text-2xl">🏠</div><div><h3 class="font-bold text-lg leading-tight">{{ accommodation.name }}</h3><div class="text-white/80 text-sm mt-1 flex items-center gap-2"><div class="flex items-center gap-1"><span>📅</span><span>{{ displayCheckInDate }} 入住</span></div><span class="bg-white/20 text-[10px] px-2 py-0.5 rounded font-mono">{{ stayDuration }} 晚</span></div></div></div>
+                </div>
+                <div class="p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 mb-6 text-sm">
+                        <div class="flex gap-3"><div class="text-[#BC4749] mt-0.5 text-lg">📍</div><div class="flex-1"><div class="text-stone-400 text-xs mb-0.5">地址</div><div class="font-medium text-stone-800">{{ accommodation.address }}</div></div></div>
+                        <div class="flex gap-3"><div class="text-[#606C38] mt-0.5 text-lg">🚇</div><div class="flex-1"><div class="text-stone-400 text-xs mb-0.5">最近車站</div><div class="font-medium text-stone-800">{{ accommodation.station || '未設定' }}</div></div></div>
+                        <div class="flex gap-3"><div class="text-stone-500 mt-0.5 text-lg">🕒</div><div class="flex-1"><div class="text-stone-400 text-xs mb-0.5">Check-in</div><div class="font-bold text-stone-800 font-mono text-base">{{ accommodation.check_in_time }}</div></div></div>
+                         <div class="flex gap-3"><div class="text-stone-500 mt-0.5 text-lg">🕒</div><div class="flex-1"><div class="text-stone-400 text-xs mb-0.5">Check-out</div><div class="font-bold text-stone-800 font-mono text-base">{{ accommodation.check_out_time }}</div></div></div>
+                    </div>
+                    <a v-if="accommodation.google_map_url" :href="accommodation.google_map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-sm active:scale-[0.99] transition-transform flex justify-center items-center gap-2">🗺️ Google地圖導航</a>
+                </div>
+            </div>
+            <div class="bg-[#E3D5CA]/30 rounded-xl border border-[#E3D5CA] overflow-hidden shadow-sm" v-if="accommodation.transportation && accommodation.transportation.length > 0">
+                <div class="p-3 border-b border-[#E3D5CA] flex items-center gap-2 bg-[#E3D5CA]/50"><span class="text-xl">🚄</span><h3 class="font-bold text-[#6F4E37] text-sm">交通方式</h3></div>
+                <div class="p-5"><ol class="relative border-l-2 border-[#D4A373] ml-2 space-y-6"><li v-for="(trans, index) in accommodation.transportation" :key="index" class="ml-6"><span class="absolute -left-[9px] flex items-center justify-center w-5 h-5 bg-stone-100 rounded-full border-2 border-[#D4A373] text-[10px] font-bold text-[#6F4E37] bg-white">{{ trans.step }}</span><p class="text-sm text-[#6F4E37] leading-relaxed font-medium">{{ trans.text }}</p></li></ol><div class="mt-6 flex items-start gap-2 bg-white/60 p-3 rounded-lg border border-white/50" v-if="accommodation.transport_note"><span class="text-[#D4A373] mt-0.5">💡</span><p class="text-xs text-stone-600 font-medium">{{ accommodation.transport_note }}</p></div></div>
+            </div>
+        </div>
+    </section>
+
+    <div v-if="showTransportForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showTransportForm = false">
+        <div class="bg-[#FDFCF8] w-full max-w-lg rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+             <div class="flex justify-between mb-4 items-center">
+                <h3 class="font-bold text-lg text-[#283618]">{{ isEditingTransport ? '編輯路線' : '新增路線' }}</h3>
+                <button @click="showTransportForm=false" class="text-2xl text-stone-400 hover:text-stone-600">×</button>
+            </div>
+            <div class="space-y-4">
+                 <div class="flex gap-2">
+                    <div class="flex-1"><label class="text-xs text-stone-500 mb-1 block">路線名稱</label><input v-model="transportForm.title" placeholder="例: 關西機場 → 難波" class="w-full border border-stone-300 p-2 rounded-lg bg-white font-bold focus:outline-none focus:border-[#606C38] focus:ring-1 focus:ring-[#606C38]" /></div>
+                    <div class="w-1/3"><label class="text-xs text-stone-500 mb-1 block">交通工具</label><input v-model="transportForm.transport_type" placeholder="例: 南海電鐵" class="w-full border border-stone-300 p-2 rounded-lg bg-white focus:outline-none focus:border-[#606C38]" /></div>
+                 </div>
+                 <div class="flex gap-2">
+                    <div class="flex-1"><label class="text-xs text-stone-500 mb-1 block">行車時間</label><input v-model="transportForm.duration" placeholder="例: 約48分鐘" class="w-full border border-stone-300 p-2 rounded-lg bg-white focus:outline-none focus:border-[#606C38]" /></div>
+                    <div class="flex-1"><label class="text-xs text-stone-500 mb-1 block">預估票價</label><input v-model="transportForm.price" placeholder="例: ¥970 / 人" class="w-full border border-stone-300 p-2 rounded-lg bg-white font-bold text-[#BC4749] focus:outline-none focus:border-[#606C38]" /></div>
+                 </div>
+                 
+                 <div class="bg-stone-50 p-3 rounded-lg border border-stone-200">
+                    <label class="text-xs font-bold text-stone-700 mb-2 block">路線步驟</label>
+                    <div v-for="(step, idx) in transportForm.steps" :key="idx" class="mb-4 pb-4 border-b border-stone-200 last:border-0 last:pb-0 last:mb-0">
+                        <div class="flex justify-between items-center mb-1">
+                             <span class="text-xs bg-[#E9EDC9] px-2 py-0.5 rounded text-[#283618] font-bold">Step {{ Number(idx)+1 }}</span>
+                             <button @click="removeTransStep(idx)" class="text-[#BC4749] text-xs" v-if="transportForm.steps.length > 1">刪除</button>
+                        </div>
+                        <input v-model="step.title" placeholder="步驟標題" class="w-full border border-stone-300 p-2 rounded mb-2 text-sm font-bold focus:outline-none focus:border-[#606C38]" />
+                        <textarea v-model="step.desc" placeholder="詳細說明..." class="w-full border border-stone-300 p-2 rounded mb-2 text-xs h-16 focus:outline-none focus:border-[#606C38]"></textarea>
+                        <input v-model="step.tip" placeholder="💡 黃色底提示 (選填)" class="w-full border border-[#D4A373]/30 bg-[#FEFAE0] p-2 rounded text-xs text-[#6F4E37] focus:outline-none focus:border-[#D4A373]" />
+                    </div>
+                    <button @click="addTransStep" class="w-full py-2 border border-dashed border-stone-300 rounded text-stone-500 text-xs mt-2 hover:bg-stone-100">+ 新增步驟</button>
+                 </div>
+
+                 <div><label class="text-xs text-stone-500 mb-1 block">Google Map URL</label><input v-model="transportForm.map_url" placeholder="http..." class="w-full border border-stone-300 p-2 rounded-lg bg-white text-[#606C38] text-xs focus:outline-none focus:border-[#606C38]" /></div>
+
+                 <div class="flex gap-3 mt-6 pt-2 border-t border-stone-100">
+                    <button v-if="isEditingTransport" @click="handleDeleteTransport" class="bg-red-50 text-[#BC4749] px-4 py-3 rounded-xl font-bold text-sm">刪除</button>
+                    <button @click="handleSaveTransport" class="bg-[#283618] text-white flex-1 py-3 rounded-xl font-bold shadow-md active:scale-95 transition hover:bg-[#3A5A40]">儲存設定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="showAttractionForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showAttractionForm = false">
+        <div class="bg-[#FDFCF8] w-full max-w-md rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between mb-4 items-center">
+                <h3 class="font-bold text-lg text-[#283618]">{{ isEditingAttraction ? '編輯景點' : '新增景點' }}</h3>
+                <button @click="showAttractionForm=false" class="text-2xl text-stone-400 hover:text-stone-600">×</button>
+            </div>
+            <div class="space-y-4">
+                <div class="flex gap-2">
+                    <div class="w-1/3"><label class="text-xs text-stone-500 mb-1 block">地區標籤</label><input v-model="attractionForm.location_tag" class="w-full border border-stone-300 p-2 rounded-lg bg-white text-center focus:outline-none focus:border-[#606C38]" /></div>
+                    <div class="flex-1"><label class="text-xs text-stone-500 mb-1 block">景點名稱</label><input v-model="attractionForm.title" class="w-full border border-stone-300 p-2 rounded-lg bg-white font-bold focus:outline-none focus:border-[#606C38]" /></div>
+                </div>
+                <div><label class="text-xs text-stone-500 mb-1 block">副標題</label><input v-model="attractionForm.subtitle" class="w-full border border-stone-300 p-2 rounded-lg bg-white focus:outline-none focus:border-[#606C38]" /></div>
+                <div><label class="text-xs text-stone-500 mb-1 block">介紹描述</label><textarea v-model="attractionForm.description" class="w-full border border-stone-300 p-2 rounded-lg bg-white h-24 text-sm focus:outline-none focus:border-[#606C38]"></textarea></div>
+                <div class="bg-[#FEFAE0] p-3 rounded-lg border border-[#E9EDC9]">
+                    <label class="text-xs font-bold text-[#D4A373] mb-1 block">✨ 必訪亮點 (一行一個)</label><textarea v-model="attractionForm.highlights" class="w-full border border-stone-200 p-2 rounded-lg bg-white h-20 text-sm focus:outline-none focus:border-[#D4A373]"></textarea>
+                    <label class="text-xs font-bold text-[#D4A373] mt-2 mb-1 block">🍽️ 必吃美食 (一行一個，可選)</label><textarea v-model="attractionForm.must_eat" class="w-full border border-stone-200 p-2 rounded-lg bg-white h-16 text-sm focus:outline-none focus:border-[#D4A373]"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-xs text-stone-500 mb-1 block">🚇 交通方式</label><input v-model="attractionForm.transport_info" class="w-full border border-stone-300 p-2 rounded-lg bg-white text-sm focus:outline-none focus:border-[#606C38]" /></div>
+                    <div><label class="text-xs text-stone-500 mb-1 block">🎫 門票/費用</label><input v-model="attractionForm.ticket_price" class="w-full border border-stone-300 p-2 rounded-lg bg-white text-sm focus:outline-none focus:border-[#606C38]" /></div>
+                    <div class="col-span-2"><label class="text-xs text-stone-500 mb-1 block">⏰ 營業時間</label><input v-model="attractionForm.opening_hours" class="w-full border border-stone-300 p-2 rounded-lg bg-white text-sm focus:outline-none focus:border-[#606C38]" /></div>
+                </div>
+                <div><label class="text-xs text-stone-500 mb-1 block">📍 Google Map URL</label><input v-model="attractionForm.map_url" class="w-full border border-stone-300 p-2 rounded-lg bg-white text-[#606C38] text-xs focus:outline-none focus:border-[#606C38]" /></div>
+                <div class="flex gap-3 mt-6 pt-2 border-t border-stone-100">
+                    <button v-if="isEditingAttraction" @click="handleDeleteAttraction" class="bg-red-50 text-[#BC4749] px-4 py-3 rounded-xl font-bold text-sm">刪除</button>
+                    <button @click="handleSaveAttraction" class="bg-[#283618] text-white flex-1 py-3 rounded-xl font-bold shadow-md active:scale-95 transition hover:bg-[#3A5A40]">儲存設定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="showActivityForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showActivityForm = false">
+        <div class="bg-[#FDFCF8] w-full max-w-md rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between mb-4"><h3 class="font-bold text-lg text-[#283618]">{{ isEditingActivity ? '編輯行程' : '新增行程' }}</h3><button @click="showActivityForm=false" class="text-2xl text-stone-400">×</button></div>
+            <div class="space-y-3">
+                <input v-model="activityForm.date" type="date" class="w-full border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]" />
+                <div class="flex gap-2">
+                    <input v-model="activityForm.start_time" placeholder="時間 (09:00)" class="w-1/3 border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]" />
+                    <select v-model="activityForm.category" class="flex-1 border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]"><option>景點</option><option>交通</option><option>餐飲</option><option>住宿</option></select>
+                </div>
+                <input v-model="activityForm.title" placeholder="名稱" class="w-full border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]" />
+                <textarea v-model="activityForm.description" placeholder="備註" class="w-full border border-stone-300 p-2 rounded-xl bg-white h-20 focus:outline-none focus:border-[#606C38]"></textarea>
+                <div class="flex gap-2 mt-2">
+                    <button v-if="isEditingActivity" @click="handleDeleteActivity" class="bg-red-50 text-[#BC4749] flex-1 py-2 rounded-xl">刪除</button>
+                    <button @click="handleSaveActivity" class="bg-[#283618] text-white flex-1 py-2 rounded-xl hover:bg-[#3A5A40]">確認</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="showAccForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" @click.self="showAccForm = false">
+        <div class="bg-[#FDFCF8] w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-5 sticky top-0 bg-[#FDFCF8] z-10 py-2 border-b border-stone-200"><h3 class="text-lg font-black text-[#283618]">編輯住宿</h3><button @click="showAccForm = false" class="text-stone-400 text-2xl">×</button></div>
+            <div class="space-y-4">
+                <div><label class="text-xs text-stone-500">名稱</label><input v-model="accForm.name" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
+                <div class="grid grid-cols-2 gap-3 bg-stone-50 p-3 rounded border border-stone-200">
+                    <div class="col-span-2 text-xs font-bold text-stone-700">入住設定</div>
+                    <div><label class="text-[10px] text-stone-400">日期</label><input v-model="accForm.check_in_date" type="date" class="w-full bg-white border border-stone-300 rounded px-1 py-1" /></div>
+                    <div><label class="text-[10px] text-stone-400">時間</label><input v-model="accForm.check_in_time" class="w-full bg-white border border-stone-300 rounded px-1 py-1" /></div>
+                    <div class="col-span-2 text-xs font-bold text-stone-700 mt-2">退房設定</div>
+                    <div><label class="text-[10px] text-stone-400">日期</label><input v-model="accForm.check_out_date" type="date" class="w-full bg-white border border-stone-300 rounded px-1 py-1" /></div>
+                    <div><label class="text-[10px] text-stone-400">時間</label><input v-model="accForm.check_out_time" class="w-full bg-white border border-stone-300 rounded px-1 py-1" /></div>
+                </div>
+                <div><label class="text-xs text-stone-500">地址</label><input v-model="accForm.address" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
+                <div><label class="text-xs text-stone-500">最近車站</label><input v-model="accForm.station" placeholder="例如: JR今宮站 (步行2分)" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
+                <div><label class="text-xs text-stone-500">Google Map URL</label><input v-model="accForm.google_map_url" class="w-full border border-stone-300 bg-white rounded px-2 py-2 text-[#606C38] focus:outline-none focus:border-[#606C38]" /></div>
+                <div class="bg-stone-50 p-3 rounded border border-stone-200">
+                    <label class="text-xs font-bold mb-2 block text-stone-700">交通步驟</label>
+                    <div v-for="(step, idx) in accForm.transportation" :key="idx" class="flex gap-2 mb-2"><span class="w-6 h-6 flex items-center justify-center bg-white border border-stone-300 rounded-full text-xs mt-2 text-[#606C38] font-bold">{{ Number(idx)+1 }}</span><textarea v-model="step.text" class="flex-1 bg-white border border-stone-300 rounded px-2 py-1 h-16 resize-none focus:outline-none focus:border-[#606C38]"></textarea><button @click="removeTransportStep(idx)" class="text-[#BC4749] self-center">×</button></div>
+                    <button @click="addTransportStep" class="w-full py-2 border border-dashed border-stone-300 rounded text-xs text-stone-500 hover:bg-stone-100">+ 步驟</button>
+                </div>
+                <button @click="saveAccommodation" class="w-full bg-[#283618] text-white py-3 rounded-xl font-bold mt-4 hover:bg-[#3A5A40]">儲存</button>
+            </div>
+        </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.tab { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; background:transparent; border:none; padding:6px 8px; border-radius:12px; color:#a8a29e; cursor: pointer; transition: all 0.2s; }
+.tab .icon { font-size:18px; margin-bottom: 2px; }
+.tab .label { font-size:11px; font-weight: 500; }
+/* Active 狀態改為淺黃綠背景 */
+.tab.active { background: #E9EDC9; color:#283618; box-shadow:0 1px 2px rgba(0,0,0,0.05); transform: translateY(-1px); }
+</style>
