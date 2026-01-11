@@ -228,56 +228,83 @@
   // ==========================================
   //  PART 3: 住宿 (Accommodation)
   // ==========================================
-  const accommodation = ref<any>(null)
+  const accommodations = ref<any[]>([]) 
   const showAccForm = ref(false)
+  const isEditingAcc = ref(false)       
+  const editingAccId = ref<number | null>(null) 
   
   const accForm = ref({
     name: '', address: '', station: '', 
     check_in_date: '', check_out_date: '',
-    check_in_time: '15:00 - 23:00', check_out_time: '10:00前',
+    check_in_time: '15:00', check_out_time: '10:00',
     google_map_url: '', transportation: [] as any[], transport_note: ''
   })
 
-  function openAccEdit() {
-    if (accommodation.value) {
+  function openAccEdit(item?: any) {
+    if (item) {
+      isEditingAcc.value = true
+      editingAccId.value = item.id
       accForm.value = { 
-          ...accommodation.value, 
-          transportation: accommodation.value.transportation || [{ step: 1, text: '' }],
-          station: accommodation.value.station || '' 
+          ...item, 
+          transportation: item.transportation || [{ step: 1, text: '' }],
+          station: item.station || '' 
       }
     } else {
+      isEditingAcc.value = false
+      editingAccId.value = null
       accForm.value = {
-        name: '新住宿地點', address: '', station: '', check_in_date: '', check_out_date: '',
-        check_in_time: '15:00', check_out_time: '10:00', google_map_url: '', transportation: [{ step: 1, text: '' }], transport_note: ''
+        name: '', address: '', station: '', 
+        check_in_date: '', check_out_date: '',
+        check_in_time: '15:00', check_out_time: '10:00', 
+        google_map_url: '', transportation: [{ step: 1, text: '' }], transport_note: ''
       }
     }
     showAccForm.value = true
   }
   
   function addTransportStep() { accForm.value.transportation.push({ step: accForm.value.transportation.length + 1, text: '' }) }
-  function removeTransportStep(index: number) { if (accForm.value.transportation.length > 1) { accForm.value.transportation.splice(index, 1); accForm.value.transportation.forEach((t, i) => t.step = i + 1) } }
+  function removeTransportStep(index: number) { 
+    if (accForm.value.transportation.length > 1) { 
+        accForm.value.transportation.splice(index, 1); 
+        accForm.value.transportation.forEach((t, i) => t.step = i + 1) 
+    } 
+  }
   
   async function saveAccommodation() {
-    const upsertData = {
+    if (!accForm.value.name) return alert('請填寫住宿名稱')
+    const payload = {
       trip_id: tripId, 
       ...accForm.value,
       check_in_date: accForm.value.check_in_date || null,
       check_out_date: accForm.value.check_out_date || null
     }
-    if (accommodation.value?.id) (upsertData as any).id = accommodation.value.id
-    else delete (upsertData as any).id
+    delete (payload as any).id
 
-    const { error } = await supabase.from('accommodations').upsert(upsertData)
+    let error = null
+    if (isEditingAcc.value && editingAccId.value) {
+        const res = await supabase.from('accommodations').update(payload).eq('id', editingAccId.value)
+        error = res.error
+    } else {
+        const res = await supabase.from('accommodations').insert([payload])
+        error = res.error
+    }
     if (!error) { showAccForm.value = false; loadAccommodationData() } else alert(error.message)
+  }
+
+  async function handleDeleteAccommodation() {
+     if (!editingAccId.value || !confirm('確定刪除此住宿地點？')) return
+     const { error } = await supabase.from('accommodations').delete().eq('id', editingAccId.value)
+     if (!error) { showAccForm.value = false; loadAccommodationData() }
   }
   
   async function loadAccommodationData() {
-      const { data } = await supabase.from('accommodations').select('*').eq('trip_id', tripId).single()
-      accommodation.value = data || null
+      const { data } = await supabase.from('accommodations').select('*').eq('trip_id', tripId).order('check_in_date', { ascending: true })
+      accommodations.value = data || []
   }
 
-  const displayCheckInDate = computed(() => accommodation.value?.check_in_date ? `${new Date(accommodation.value.check_in_date).getMonth() + 1}月${new Date(accommodation.value.check_in_date).getDate()}日` : '未設定')
-  const stayDuration = computed(() => (accommodation.value?.check_in_date && accommodation.value?.check_out_date) ? Math.max(0, Math.ceil((new Date(accommodation.value.check_out_date).getTime() - new Date(accommodation.value.check_in_date).getTime()) / 86400000)) : 1)
+  const getDisplayCheckInDate = (item: any) => item.check_in_date ? `${new Date(item.check_in_date).getMonth() + 1}月${new Date(item.check_in_date).getDate()}日` : '未設定'
+  const getStayDuration = (item: any) => (item.check_in_date && item.check_out_date) ? Math.max(0, Math.ceil((new Date(item.check_out_date).getTime() - new Date(item.check_in_date).getTime()) / 86400000)) : 1
+
 
   // ==========================================
   //  全部載入
@@ -327,15 +354,15 @@
 
     <section v-show="activeTab==='transport'" class="px-4 pb-20">
         <div class="mb-4 pl-1">
-             <h2 class="text-lg font-bold text-[#BC4749] flex items-center gap-2"><span class="text-xl">🚆</span> 交通詳細指南</h2>
-             <span class="text-xs text-stone-400 block mt-1">每段路線附詳細搭乘步驟</span>
+             <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2"><span class="text-xl">🚆</span> 交通詳細指南</h2>
+             <!-- <span class="text-xs text-stone-400 block mt-1">每段路線附詳細搭乘步驟</span> -->
         </div>
 
         <div class="space-y-6">
             <div v-for="trans in transports" :key="trans.id" class="bg-white rounded-xl shadow-md border border-stone-100 overflow-hidden relative group hover:shadow-lg transition-shadow">
                 
-                <button @click="openTransportForm(trans)" class="absolute top-3 right-3 z-10 bg-white/20 hover:bg-white/40 text-white p-1.5 rounded text-xs backdrop-blur-sm transition border border-white/30">
-                    編輯
+                <button @click="openTransportForm(trans)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">
+                    ✏️
                 </button>
 
                 <div class="bg-gradient-to-r from-[#6B905C] to-[#463F3A] text-white p-4">
@@ -386,17 +413,12 @@
     </section>
 
     <section v-show="activeTab==='attractions'" class="px-4 pb-20">
-         <div class="flex justify-between items-center mb-4 pl-1"><h2 class="text-lg font-bold text-[#283618]">景點詳細介紹</h2><span class="text-xs text-stone-400">點擊地圖按鈕直接導航</span></div>
+        <div class="flex justify-between items-center mb-4 pl-1"><h2 class="text-xl font-bold text-[#283618]"> 🌅 景點詳細介紹</h2>
+          <!-- <span class="text-xs text-stone-400">點擊地圖按鈕直接導航</span> -->
+        </div>
          <div class="grid gap-6">
             <div v-for="attr in attractions" :key="attr.id" class="bg-white rounded-xl shadow-md overflow-hidden border border-stone-100 relative group hover:shadow-lg transition-all">
                 <button @click="openAttractionForm(attr)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">✏️</button>
-                <!-- <div class="bg-gradient-to-br from-[#A3B18A] to-[#588157] p-6 text-white pt-10 pb-8 relative">
-                <div v-if="attr.location_tag" class="absolute top-6 left-6 bg-[#FDFCF8] text-[#344E41] text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
-                    {{ attr.location_tag }}
-                </div>
-                
-                <h3 class="text-2xl font-bold mb-1 mt-4 text-white">{{ attr.title }}</h3>
-                <p class="text-sm text-[#DAD7CD] font-medium">{{ attr.subtitle }}</p> -->
 
                 <div class="bg-gradient-to-br from-[#D4A373] to-[#B08968] p-6 text-white pt-10 pb-8 relative">
                 <div v-if="attr.location_tag" class="absolute top-6 left-6 bg-[#FEFAE0] text-[#9C6644] text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
@@ -410,13 +432,6 @@
                 <div class="p-5">
                     <p class="text-stone-600 text-sm leading-relaxed mb-5 text-justify">{{ attr.description || '暫無描述' }}</p>
                     
-                    <!-- <div class="bg-[#FEFAE0] rounded-lg p-4 mb-5 border border-[#E9EDC9]" v-if="attr.highlights || attr.must_eat">
-                        <h4 class="text-sm font-bold text-[#D4A373] mb-2 flex items-center gap-1"><span>✨</span> 必訪亮點 & 美食</h4>
-                        <ul class="space-y-2">
-                            <li v-for="(line, idx) in parseLines(attr.highlights)" :key="'h'+idx" class="flex items-start gap-2 text-sm text-stone-700"><span class="mt-0.5 text-xs text-[#BC4749]">●</span><span>{{ line }}</span></li>
-                            <li v-for="(line, idx) in parseLines(attr.must_eat)" :key="'m'+idx" class="flex items-start gap-2 text-sm text-stone-700"><span class="mt-0.5 text-xs text-[#BC4749]">🍽️</span><span>{{ line }}</span></li>
-                        </ul>
-                    </div> -->
                     <div class="bg-[#FEFAE0] rounded-lg p-4 mb-5 border border-[#E9EDC9]" v-if="attr.highlights || attr.must_eat">
                         <h4 class="text-sm font-bold text-[#A98467] mb-2 flex items-center gap-1"><span>✨</span> 必訪亮點 & 美食</h4>
                         <ul class="space-y-2">
@@ -465,29 +480,95 @@
         <button @click="openActivityForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-20 transition hover:scale-110 active:scale-95">+</button>
     </section>
 
-    <section v-show="activeTab==='accommodation'" class="px-4 pb-10">
-        <div class="flex justify-between items-center mb-4 pl-1"><h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2"><span class="text-2xl">🏨</span> 住宿資訊</h2><button v-if="accommodation" @click="openAccEdit" class="text-sm bg-white border border-stone-200 text-stone-600 px-3 py-1.5 rounded-lg shadow-sm font-bold active:scale-95 transition hover:bg-stone-50">✏️ 編輯</button></div>
-        <div v-if="!accommodation" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300"><p class="text-stone-400 mb-4">尚未建立住宿資訊</p><button @click="openAccEdit" class="bg-[#283618] text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-[#606C38] transition">+ 新增住宿</button></div>
-        <div v-else>
-            <div class="bg-white rounded-xl shadow-md border border-stone-100 overflow-hidden mb-6">
-                <div class="bg-[#6F4E37] text-white p-4">
-                    <div class="flex items-start gap-3"><div class="bg-white/20 p-2 rounded-lg text-2xl">🏠</div><div><h3 class="font-bold text-lg leading-tight">{{ accommodation.name }}</h3><div class="text-white/80 text-sm mt-1 flex items-center gap-2"><div class="flex items-center gap-1"><span>📅</span><span>{{ displayCheckInDate }} 入住</span></div><span class="bg-white/20 text-[10px] px-2 py-0.5 rounded font-mono">{{ stayDuration }} 晚</span></div></div></div>
-                </div>
-                <div class="p-5">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 mb-6 text-sm">
-                        <div class="flex gap-3"><div class="text-[#BC4749] mt-0.5 text-lg">📍</div><div class="flex-1"><div class="text-stone-400 text-xs mb-0.5">地址</div><div class="font-medium text-stone-800">{{ accommodation.address }}</div></div></div>
-                        <div class="flex gap-3"><div class="text-[#606C38] mt-0.5 text-lg">🚇</div><div class="flex-1"><div class="text-stone-400 text-xs mb-0.5">最近車站</div><div class="font-medium text-stone-800">{{ accommodation.station || '未設定' }}</div></div></div>
-                        <div class="flex gap-3"><div class="text-stone-500 mt-0.5 text-lg">🕒</div><div class="flex-1"><div class="text-stone-400 text-xs mb-0.5">Check-in</div><div class="font-bold text-stone-800 font-mono text-base">{{ accommodation.check_in_time }}</div></div></div>
-                         <div class="flex gap-3"><div class="text-stone-500 mt-0.5 text-lg">🕒</div><div class="flex-1"><div class="text-stone-400 text-xs mb-0.5">Check-out</div><div class="font-bold text-stone-800 font-mono text-base">{{ accommodation.check_out_time }}</div></div></div>
+    <section v-show="activeTab==='accommodation'" class="px-4 pb-20">
+        <div class="flex justify-between items-center mb-4 pl-1">
+            <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2">
+                <span class="text-2xl">🏨</span> 住宿資訊
+            </h2>
+             <span class="text-xs text-stone-400" v-if="accommodations.length > 0">共 {{ accommodations.length }} 間</span>
+        </div>
+
+        <div v-if="accommodations.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300">
+            <p class="text-stone-400 mb-4">尚未建立住宿資訊</p>
+            <button @click="openAccEdit()" class="text-[#BC4749] font-bold hover:underline">新增第一間住宿</button>
+        </div>
+        
+        <div v-else class="space-y-8">
+            <div v-for="item in accommodations" :key="item.id">
+                <div class="bg-white rounded-xl shadow-md border border-stone-100 overflow-hidden relative group hover:shadow-lg transition-shadow">
+                    
+                    <button @click="openAccEdit(item)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">
+                        ✏️
+                    </button>
+
+                    <div class="bg-[#6F4E37] text-white p-4">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-white/20 p-2 rounded-lg text-2xl">🏠</div>
+                            <div>
+                                <h3 class="font-bold text-lg leading-tight">{{ item.name }}</h3>
+                                <div class="text-white/80 text-sm mt-1 flex items-center gap-2">
+                                    <div class="flex items-center gap-1"><span>📅</span><span>{{ getDisplayCheckInDate(item) }} 入住</span></div>
+                                    <span class="bg-white/20 text-[10px] px-2 py-0.5 rounded font-mono">{{ getStayDuration(item) }} 晚</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <a v-if="accommodation.google_map_url" :href="accommodation.google_map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-sm active:scale-[0.99] transition-transform flex justify-center items-center gap-2">🗺️ Google地圖導航</a>
+
+                    <div class="p-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 mb-6 text-sm">
+                            <div class="flex gap-3">
+                                <div class="text-[#BC4749] mt-0.5 text-lg">📍</div>
+                                <div class="flex-1">
+                                    <div class="text-stone-400 text-xs mb-0.5">地址</div>
+                                    <div class="font-medium text-stone-800">{{ item.address }}</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
+                                <div class="text-[#606C38] mt-0.5 text-lg">🚇</div>
+                                <div class="flex-1">
+                                    <div class="text-stone-400 text-xs mb-0.5">最近車站</div>
+                                    <div class="font-medium text-stone-800">{{ item.station || '未設定' }}</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
+                                <div class="text-stone-500 mt-0.5 text-lg">🕒</div>
+                                <div class="flex-1">
+                                    <div class="text-stone-400 text-xs mb-0.5">Check-in</div>
+                                    <div class="font-bold text-stone-800 font-mono text-base">{{ item.check_in_time }}</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
+                                <div class="text-stone-500 mt-0.5 text-lg">🕒</div>
+                                <div class="flex-1">
+                                    <div class="text-stone-400 text-xs mb-0.5">Check-out</div>
+                                    <div class="font-bold text-stone-800 font-mono text-base">{{ item.check_out_time }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-[#F5F5F4] rounded-xl border border-stone-200 overflow-hidden shadow-sm mb-6" v-if="item.transportation && item.transportation.length > 0">
+                            <div class="p-3 border-b border-stone-200 flex items-center gap-2 bg-[#E7E5E4]/50"><span class="text-xl">🚄</span>
+                                <h3 class="font-bold text-[#6F4E37] text-sm">交通方式</h3>
+                            </div>
+                            <div class="p-5">
+                                <ol class="relative border-l-2 border-[#D4A373] ml-2 space-y-6">
+                                    <li v-for="(trans, index) in item.transportation" :key="index" class="ml-6"><span class="absolute -left-[9px] flex items-center justify-center w-5 h-5 bg-stone-100 rounded-full border-2 border-[#D4A373] text-[10px] font-bold text-[#6F4E37] bg-white">{{ trans.step }}</span>
+                                        <p class="text-sm text-[#6F4E37] leading-relaxed font-medium">{{ trans.text }}</p>
+                                    </li>
+                                </ol>
+                                <div class="mt-6 flex items-start gap-2 bg-white/60 p-3 rounded-lg border border-white/50" v-if="item.transport_note"><span class="text-[#D4A373] mt-0.5">💡</span>
+                                    <p class="text-xs text-stone-600 font-medium">{{ item.transport_note }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <a v-if="item.google_map_url" :href="item.google_map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-sm active:scale-[0.99] transition-transform flex justify-center items-center gap-2">🗺️ Google地圖導航</a>
+                    </div>
                 </div>
-            </div>
-            <div class="bg-[#E3D5CA]/30 rounded-xl border border-[#E3D5CA] overflow-hidden shadow-sm" v-if="accommodation.transportation && accommodation.transportation.length > 0">
-                <div class="p-3 border-b border-[#E3D5CA] flex items-center gap-2 bg-[#E3D5CA]/50"><span class="text-xl">🚄</span><h3 class="font-bold text-[#6F4E37] text-sm">交通方式</h3></div>
-                <div class="p-5"><ol class="relative border-l-2 border-[#D4A373] ml-2 space-y-6"><li v-for="(trans, index) in accommodation.transportation" :key="index" class="ml-6"><span class="absolute -left-[9px] flex items-center justify-center w-5 h-5 bg-stone-100 rounded-full border-2 border-[#D4A373] text-[10px] font-bold text-[#6F4E37] bg-white">{{ trans.step }}</span><p class="text-sm text-[#6F4E37] leading-relaxed font-medium">{{ trans.text }}</p></li></ol><div class="mt-6 flex items-start gap-2 bg-white/60 p-3 rounded-lg border border-white/50" v-if="accommodation.transport_note"><span class="text-[#D4A373] mt-0.5">💡</span><p class="text-xs text-stone-600 font-medium">{{ accommodation.transport_note }}</p></div></div>
             </div>
         </div>
+        
+        <button @click="openAccEdit()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
     </section>
 
     <div v-if="showTransportForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showTransportForm = false">
@@ -582,7 +663,7 @@
 
     <div v-if="showAccForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" @click.self="showAccForm = false">
         <div class="bg-[#FDFCF8] w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-5 sticky top-0 bg-[#FDFCF8] z-10 py-2 border-b border-stone-200"><h3 class="text-lg font-black text-[#283618]">編輯住宿</h3><button @click="showAccForm = false" class="text-stone-400 text-2xl">×</button></div>
+            <div class="flex justify-between items-center mb-5 sticky top-0 bg-[#FDFCF8] z-10 py-2 border-b border-stone-200"><h3 class="text-lg font-black text-[#283618]">{{ isEditingAcc ? '編輯住宿' : '新增住宿' }}</h3><button @click="showAccForm = false" class="text-stone-400 text-2xl">×</button></div>
             <div class="space-y-4">
                 <div><label class="text-xs text-stone-500">名稱</label><input v-model="accForm.name" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
                 <div class="grid grid-cols-2 gap-3 bg-stone-50 p-3 rounded border border-stone-200">
@@ -601,7 +682,11 @@
                     <div v-for="(step, idx) in accForm.transportation" :key="idx" class="flex gap-2 mb-2"><span class="w-6 h-6 flex items-center justify-center bg-white border border-stone-300 rounded-full text-xs mt-2 text-[#606C38] font-bold">{{ Number(idx)+1 }}</span><textarea v-model="step.text" class="flex-1 bg-white border border-stone-300 rounded px-2 py-1 h-16 resize-none focus:outline-none focus:border-[#606C38]"></textarea><button @click="removeTransportStep(idx)" class="text-[#BC4749] self-center">×</button></div>
                     <button @click="addTransportStep" class="w-full py-2 border border-dashed border-stone-300 rounded text-xs text-stone-500 hover:bg-stone-100">+ 步驟</button>
                 </div>
-                <button @click="saveAccommodation" class="w-full bg-[#283618] text-white py-3 rounded-xl font-bold mt-4 hover:bg-[#3A5A40]">儲存</button>
+                
+                <div class="flex gap-3 mt-6 pt-2 border-t border-stone-100">
+                    <button v-if="isEditingAcc" @click="handleDeleteAccommodation" class="bg-red-50 text-[#BC4749] px-4 py-3 rounded-xl font-bold text-sm">刪除</button>
+                    <button @click="saveAccommodation" class="flex-1 bg-[#283618] text-white py-3 rounded-xl font-bold hover:bg-[#3A5A40]">儲存</button>
+                </div>
             </div>
         </div>
     </div>
@@ -614,6 +699,5 @@
 .tab { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; background:transparent; border:none; padding:6px 8px; border-radius:12px; color:#a8a29e; cursor: pointer; transition: all 0.2s; }
 .tab .icon { font-size:18px; margin-bottom: 2px; }
 .tab .label { font-size:11px; font-weight: 500; }
-/* Active 狀態改為淺黃綠背景 */
 .tab.active { background: #E9EDC9; color:#283618; box-shadow:0 1px 2px rgba(0,0,0,0.05); transform: translateY(-1px); }
 </style>
