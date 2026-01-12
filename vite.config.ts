@@ -13,35 +13,23 @@ export default defineConfig({
       manifest: {
         name: 'travel-app',
         short_name: 'Travel',
-        description: 'Track and plan your trips',
-        theme_color: '#2563eb',
-        background_color: '#ffffff',
         display: 'standalone',
         scope: '/travel-app/',
         start_url: '/travel-app/',
         icons: [
           {
-            src: 'icon-192x192.png', 
+            src: 'icon-192x192.svg', 
             sizes: '192x192',
-            type: 'image/png',
+            type: 'image/svg+xml',
             purpose: 'any'
           },
           {
-            src: 'icon-512x512.png',
+            src: 'icon-512x512.svg',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/svg+xml',
             purpose: 'any'
-          },
-          {
-            src: 'icon-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'maskable'
           }
         ]
-      },
-      workbox: {
-        navigateFallback: '/travel-app/index.html'
       }
     })
   ]
