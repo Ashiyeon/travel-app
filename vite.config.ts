@@ -14,8 +14,8 @@ export default defineConfig({
         name: 'travel-app',
         short_name: 'Travel',
         display: 'standalone',
-        scope: '/travel-app/',
         start_url: '/travel-app/',
+        scope: '/travel-app/',
         icons: [
           {
             src: 'icon-192x192.svg', 

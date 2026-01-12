@@ -17,7 +17,7 @@ const createForm = ref({
   end_date: ''
 })
 
-// 共用樣式 (與 DetailView 統一)
+// 共用樣式 (與 TripDetailView 統一)
 const inputClass = "w-full border border-stone-200 bg-stone-50 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:bg-white focus:border-[#606C38] focus:ring-1 focus:ring-[#606C38] transition-all placeholder:text-stone-400"
 const labelClass = "text-xs font-bold text-stone-500 mb-1.5 block tracking-wide"
 const modalBtnBase = "flex-1 py-3 rounded-xl font-bold text-sm transition active:scale-95 shadow-sm"
@@ -109,7 +109,7 @@ onMounted(fetchTrips)
             <span class="absolute left-3 top-3 text-lg opacity-50">📝</span>
             <input 
               v-model="newTripName" 
-              placeholder="輸入行程名稱 (如: 2026 東京行)" 
+              placeholder="輸入行程名稱" 
               class="w-full bg-stone-50 border border-transparent rounded-xl pl-10 pr-4 py-3 outline-none text-stone-700 placeholder:text-stone-400 focus:bg-white focus:border-[#606C38] focus:ring-1 focus:ring-[#606C38] transition-all font-medium text-sm"
               @keyup.enter="openCreateModal"
             />

@@ -20,9 +20,7 @@ if (missingSupabaseUrl) {
 
   // 2. 偵錯資訊 (確認路徑用)
   console.log('--- PWA Debug Info ---')
-  console.log('Base URL:', import.meta.env.BASE_URL) // 應該印出 /travel-app/
+  console.log('Base URL:', import.meta.env.BASE_URL) 
   console.log('Supabase Ready:', !!import.meta.env.VITE_SUPABASE_URL)
   
-  // 注意：不需要手動 navigator.serviceWorker.register
-  // vite-plugin-pwa 的 injectRegister: 'auto' 會幫你做這件事
 }
