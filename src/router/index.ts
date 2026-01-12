@@ -3,7 +3,8 @@ import HomeView from '../views/HomeView.vue'
 import TripDetailView from '../views/TripDetailView.vue'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
+  
   routes: [
     {
       path: '/',
@@ -11,10 +12,10 @@ const router = createRouter({
       component: HomeView
     },
     {
-      path: '/trip/:id', // :id 是動態參數，代表行程的 ID
+      path: '/trip/:id',
       name: 'trip-detail',
       component: TripDetailView,
-      props: true // 讓 id 可以直接作為 props 傳進組件
+      props: true
     }
   ]
 })
