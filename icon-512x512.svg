@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <style>
+      .bg { fill: #2563eb; }
+      .icon { fill: #ffffff; }
+    </style>
+  </defs>
+  <rect class="bg" width="512" height="512"/>
+  <g class="icon" transform="translate(128, 106)">
+    <!-- Airplane icon -->
+    <path d="M128 0L170.67 85.33L256 85.33L170.67 128L213.33 213.33L128 149.33L42.67 213.33L85.33 128L0 85.33L85.33 85.33Z"/>
+    <!-- Globe circle -->
+    <circle cx="128" cy="186.67" r="120" fill="none" stroke="#ffffff" stroke-width="8"/>
+  </g>
+</svg>
