@@ -7,13 +7,36 @@ const router = useRouter()
 const trips = ref<any[]>([])
 const newTripName = ref('') // 首頁輸入框暫存用
 const isLoading = ref(true)
+const isEditMode = ref(false)
+
+// 切換模式的功能
+function toggleEditMode() {
+  if (!isEditMode.value) {
+    const password = prompt('請輸入管理員密碼以開啟編輯功能：')
+    if (password === '2077') {
+      isEditMode.value = true
+      localStorage.setItem('trip_admin_access', 'true')
+    } else if (password !== null) {
+      alert('密碼錯誤')
+    }
+  } else {
+    isEditMode.value = false
+    localStorage.removeItem('trip_admin_access')
+  }
+}
 
 // Supabase 離線處理變數
 const isOffline = ref(!navigator.onLine)
 
 onMounted(() => {
+// 檢查是否有管理員權限
+  if (localStorage.getItem('trip_admin_access') === 'true') {
+    isEditMode.value = true
+  }
+  
   window.addEventListener('online', () => isOffline.value = false)
   window.addEventListener('offline', () => isOffline.value = true)
+  fetchTrips()
 })
 
 // --- 新增行程 Modal 相關變數 ---
@@ -107,28 +130,37 @@ onMounted(fetchTrips)
   <div class="min-h-screen bg-[#FDFCF8] p-6 font-sans text-stone-700 tracking-normal">
     <div class="max-w-md mx-auto pt-4">
       
-      <div class="mb-8 pl-1">
+  <div class="mb-8 pl-1 flex justify-between items-end">
+      <div>
           <h1 class="text-3xl font-extrabold text-[#283618] tracking-wide mb-1">我的旅程 <span class="text-2xl align-middle">✈️</span></h1>
-          <p class="text-stone-500 text-sm font-medium">規劃下一場精彩的冒險</p>
+          <p class="text-stone-500 text-sm font-medium">
+              <!-- {{ isEditMode ? '🛠️ 管理員模式：可新增或修改行程' : '規劃下一場精彩的冒險' }} -->
+              規劃下一場精采的冒險
+          </p>
       </div>
+      <button @click="toggleEditMode" 
+              class="p-2.5 rounded-xl transition-all duration-300 border"
+              :class="isEditMode ? 'bg-red-50 border-red-100 text-red-500 shadow-sm' : 'bg-stone-100 border-transparent text-stone-400'">
+          {{ isEditMode ? '🔓' : '🔒' }}
+      </button>
+  </div>
       
-      <div class="bg-white p-2 rounded-2xl shadow-lg shadow-stone-200/50 mb-10 flex gap-2 items-center border border-stone-100">
-        <div class="flex-1 relative">
-            <span class="absolute left-3 top-3 text-lg opacity-50">📝</span>
-            <input 
+  <div v-if="isEditMode" class="bg-white p-2 rounded-2xl shadow-lg shadow-stone-200/50 mb-10 flex gap-2 items-center border border-stone-100 animate-in fade-in zoom-in duration-300">
+      <div class="flex-1 relative">
+          <span class="absolute left-3 top-3 text-lg opacity-50">📝</span>
+          <input 
               v-model="newTripName" 
               placeholder="輸入行程名稱" 
               class="w-full bg-stone-50 border border-transparent rounded-xl pl-10 pr-4 py-3 outline-none text-stone-700 placeholder:text-stone-400 focus:bg-white focus:border-[#606C38] focus:ring-1 focus:ring-[#606C38] transition-all font-medium text-sm"
               @keyup.enter="openCreateModal"
-            />
-        </div>
-        <button 
-          @click="openCreateModal"
-          class="bg-[#283618] text-white px-5 py-3 rounded-xl font-bold shadow-md hover:bg-[#3A5A40] active:scale-95 transition-all text-sm whitespace-nowrap"
-        >
-          新增
-        </button>
+          />
       </div>
+      <button @click="openCreateModal" class="bg-[#283618] text-white px-5 py-3 rounded-xl font-bold shadow-md hover:bg-[#3A5A40] active:scale-95 transition-all text-sm whitespace-nowrap">
+          新增
+      </button>
+  </div>
+
+  <div v-else class="mb-6"></div>
 
       <div v-if="isLoading" class="text-center py-12">
           <div class="text-3xl animate-bounce mb-2">🌏</div>

@@ -14,14 +14,17 @@
   const subtitleRaw = ref('')
   const startDateRaw = ref('')
 
+  // --- 管理員權限控制 ---
+  const isEditMode = ref(false)
+
+  // 移除了 toggleEditMode 函式，因為此頁面不再提供切換
+
   function goBack() {
     router.push('/')
   }
 
-
-  
   // ==========================================
-  //  PART 1: 景點 (Attractions)
+  //  PART 1: 景點 (Attractions) - 邏輯保持不變
   // ==========================================
   const attractions = ref<any[]>([])
   const showAttractionForm = ref(false)
@@ -83,7 +86,7 @@
   }
 
   // ==========================================
-  //  PART 2: 行程 (Itinerary)
+  //  PART 2: 行程 (Itinerary) - 邏輯保持不變
   // ==========================================
   const activities = ref<any[]>([])
   const selectedDate = ref('')
@@ -161,7 +164,7 @@
   }
 
   // ==========================================
-  //  PART 3: 住宿 (Accommodation)
+  //  PART 3: 住宿 (Accommodation) - 邏輯保持不變
   // ==========================================
   const accommodations = ref<any[]>([]) 
   const showAccForm = ref(false)
@@ -241,7 +244,7 @@
   const getStayDuration = (item: any) => (item.check_in_date && item.check_out_date) ? Math.max(0, Math.ceil((new Date(item.check_out_date).getTime() - new Date(item.check_in_date).getTime()) / 86400000)) : 1
 
   // ==========================================
-  //  PART 4: 交通 (Transport)
+  //  PART 4: 交通 (Transport) - 邏輯保持不變
   // ==========================================
   const transports = ref<any[]>([])
   const showTransportForm = ref(false)
@@ -311,6 +314,13 @@
   //  全部載入
   // ==========================================
   async function loadData() {
+    // 檢查是否有管理員權限 (關鍵邏輯：只讀取，不切換)
+    if (localStorage.getItem('trip_admin_access') === 'true') {
+        isEditMode.value = true
+    } else {
+        isEditMode.value = false
+    }
+
     const { data: trip } = await supabase.from('trips').select('*').eq('id', tripId).single()
     if (trip) {
         tripName.value = trip.name
@@ -337,7 +347,7 @@
         <button @click="goBack" class="flex items-center gap-1 text-[#606C38] font-bold text-sm hover:text-[#283618] transition">
             <span class="text-lg">‹</span> 返回列表
         </button>
-    </div>
+        </div>
 
     <div class="banner rounded-2xl overflow-hidden mb-4 mx-4 shadow-lg shadow-stone-200 bg-gradient-to-r from-[#606C38] to-[#283618]">
       <div class="p-6 text-white">
@@ -356,15 +366,14 @@
     <section v-show="activeTab==='transport'" class="px-4 pb-20">
         <div class="flex justify-between items-center mb-4 pl-1">
             <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2">
-                <span class="text-2xl">🚆</span> 交通詳細指南
+                <span class="text-xl">🚆</span> 交通詳細指南
             </h2>
-             <!-- <span class="text-xs text-stone-400 block mt-1">每段路線附詳細搭乘步驟</span> -->
         </div>
 
         <div class="space-y-6">
             <div v-for="trans in transports" :key="trans.id" class="bg-white rounded-xl shadow-md border border-stone-100 overflow-hidden relative group hover:shadow-lg transition-shadow">
                 
-                <button @click="openTransportForm(trans)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">
+                <button v-if="isEditMode" @click="openTransportForm(trans)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">
                     ✏️
                 </button>
 
@@ -407,24 +416,23 @@
             </div>
 
              <div v-if="transports.length === 0" class="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl bg-stone-50">
-                <p class="text-stone-400 mb-2">這裡空空如也</p>
-                <button @click="openTransportForm()" class="text-[#BC4749] font-bold hover:underline">新增第一條路線</button>
+                <p class="text-stone-400 mb-2">{{ isEditMode ? '這裡空空如也' : '暫無交通資訊' }}</p>
+                <button v-if="isEditMode" @click="openTransportForm()" class="text-[#BC4749] font-bold hover:underline">新增第一條路線</button>
             </div>
         </div>
         
-        <button @click="openTransportForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+        <button v-if="isEditMode" @click="openTransportForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
     </section>
 
     <section v-show="activeTab==='attractions'" class="px-4 pb-20">
         <div class="flex justify-between items-center mb-4 pl-1">
             <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2"> 
-                <span class="text-2xl">🌅</span> 景點詳細介紹
+                <span class="text-xl">🌅</span> 景點詳細介紹
             </h2>
-          <!-- <span class="text-xs text-stone-400">點擊地圖按鈕直接導航</span> -->
         </div>
          <div class="grid gap-6">
             <div v-for="attr in attractions" :key="attr.id" class="bg-white rounded-xl shadow-md overflow-hidden border border-stone-100 relative group hover:shadow-lg transition-all">
-                <button @click="openAttractionForm(attr)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">✏️</button>
+                <button v-if="isEditMode" @click="openAttractionForm(attr)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">✏️</button>
 
                 <div class="bg-gradient-to-br from-[#D4A373] to-[#B08968] p-6 text-white pt-10 pb-8 relative">
                 <div v-if="attr.location_tag" class="absolute top-6 left-6 bg-[#FEFAE0] text-[#9C6644] text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
@@ -459,12 +467,12 @@
                     <a v-if="attr.map_url" :href="attr.map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-md active:scale-[0.98] transition-all flex justify-center items-center gap-2"><span>🗺️</span> Google 地圖導航</a>
                 </div>
             </div>
-            <div v-if="attractions.length === 0" class="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl bg-stone-50"><p class="text-stone-400 mb-2">這裡空空如也</p><button @click="openAttractionForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個景點</button></div>
+            <div v-if="attractions.length === 0" class="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl bg-stone-50"><p class="text-stone-400 mb-2">{{ isEditMode ? '這裡空空如也' : '暫無景點介紹' }}</p><button v-if="isEditMode" @click="openAttractionForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個景點</button></div>
         </div>
-        <button @click="openAttractionForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+        <button v-if="isEditMode" @click="openAttractionForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
     </section>
 
-<section v-show="activeTab==='itinerary'">
+    <section v-show="activeTab==='itinerary'">
         <div v-if="activities.length > 0" class="sticky top-16 z-10 bg-[#FDFCF8]/95 backdrop-blur-sm border-b border-stone-200 pt-2">
             <div class="flex overflow-x-auto px-4 pb-3 gap-3 no-scrollbar">
                 <button v-for="date in uniqueDates" :key="date" @click="selectedDate = date" class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all shadow-sm border" :class="selectedDate === date ? 'bg-[#283618] text-white border-[#283618]' : 'bg-white text-stone-500 border-stone-200 hover:border-[#606C38]'">
@@ -475,34 +483,53 @@
 
         <div class="p-4 space-y-4">
             <div v-if="activities.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300">
-                <p class="text-stone-400 mb-2">這裡空空如也</p>
-                <button @click="openActivityForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個行程</button>
+                <p class="text-stone-400 mb-2">{{ isEditMode ? '這裡空空如也' : '暫無行程' }}</p>
+                <button v-if="isEditMode" @click="openActivityForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個行程</button>
             </div>
 
             <template v-else>
-                <div v-for="act in filteredActivities" :key="act.id" @click="openActivityForm(act)" class="bg-white p-4 rounded-2xl shadow-sm border border-stone-100 flex gap-4 cursor-pointer hover:border-[#D4A373] transition-colors">
+                <div v-for="act in filteredActivities" :key="act.id" 
+                    @click="isEditMode ? openActivityForm(act) : null" 
+                    :class="{ 'cursor-default': !isEditMode, 'hover:border-[#D4A373]': isEditMode }"
+                    class="bg-white p-4 rounded-2xl shadow-sm border border-stone-100 flex gap-4 transition-colors relative group">
+                    
                     <div class="flex flex-col items-center w-14 border-r border-stone-100 pr-2">
                         <span class="text-[#BC4749] font-black font-mono text-sm">{{ act.start_time || '--:--' }}</span>
-                        <span class="text-[10px] text-stone-400 mt-1">{{ act.category }}</span>
+                        <span class="text-[14px] text-stone-400 mt-1">{{ act.category }}</span>
                     </div>
+
                     <div class="flex-1">
                         <div class="flex items-center gap-1 mb-1">
                             <span>{{ getIcon(act.category) }}</span>
                             <h3 class="font-bold text-[#283618]">{{ act.title }}</h3>
                         </div>
-                        <p class="text-stone-500 text-xs mt-1 line-clamp-2">{{ act.description }}</p>
+
+                        <p class="text-stone-500 text-sm mt-1 line-clamp-2">{{ act.description }}</p>
+
+                        <a v-if="act.map_url" 
+                        :href="act.map_url" 
+                        target="_blank" 
+                        @click.stop
+                        class="inline-flex items-center gap-1 mt-2 bg-[#E9EDC9] text-[#283618] text-[12px] px-2 py-1 rounded-full font-bold hover:bg-[#606C38] hover:text-white transition-colors shadow-sm">
+                             查看地圖
+                        </a>
+                    </div>
+
+                    <div v-if="isEditMode" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-stone-300">
+                        ✏️
                     </div>
                 </div>
 
                 <div v-if="filteredActivities.length === 0" class="text-center py-20 text-stone-400">
                     <p>這一天還沒有行程喔</p>
-                    <button @click="openActivityForm()" class="text-[#BC4749] text-xs font-bold mt-2 hover:underline">+ 點此新增</button>
+                    <button v-if="isEditMode" @click="openActivityForm()" class="text-[#BC4749] text-xs font-bold mt-2 hover:underline">+ 點此新增</button>
                 </div>
             </template>
         </div>
 
-        <button @click="openActivityForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-20 transition hover:scale-110 active:scale-95">+</button>
+        <button v-if="isEditMode" @click="openActivityForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-20 transition hover:scale-110 active:scale-95">+</button>
     </section>
+    
     <section v-show="activeTab==='accommodation'" class="px-4 pb-20">
         <div class="flex justify-between items-center mb-4 pl-1">
             <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2">
@@ -511,20 +538,16 @@
              <span class="text-xs text-stone-400" v-if="accommodations.length > 0">共 {{ accommodations.length }} 間</span>
         </div>
 
-
-
-        
-
         <div v-if="accommodations.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300">
-            <p class="text-stone-400 mb-2">這裡空空如也</p>
-            <button @click="openAccEdit()" class="text-[#BC4749] font-bold hover:underline">新增第一間住宿</button>
+            <p class="text-stone-400 mb-2">{{ isEditMode ? '這裡空空如也' : '暫無住宿資料' }}</p>
+            <button v-if="isEditMode" @click="openAccEdit()" class="text-[#BC4749] font-bold hover:underline">新增第一間住宿</button>
         </div>
 
         <div v-else class="space-y-8">
             <div v-for="item in accommodations" :key="item.id">
                 <div class="bg-white rounded-xl shadow-md border border-stone-100 overflow-hidden relative group hover:shadow-lg transition-shadow">
                     
-                    <button @click="openAccEdit(item)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">
+                    <button v-if="isEditMode" @click="openAccEdit(item)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">
                         ✏️
                     </button>
 
@@ -595,7 +618,7 @@
             </div>
         </div>
         
-        <button @click="openAccEdit()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+        <button v-if="isEditMode" @click="openAccEdit()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
     </section>
 
     <div v-if="showTransportForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showTransportForm = false">
@@ -669,16 +692,19 @@
         </div>
     </div>
 
-    <div v-if="showActivityForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showActivityForm = false">
+<div v-if="showActivityForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showActivityForm = false">
         <div class="bg-[#FDFCF8] w-full max-w-md rounded-2xl p-6 shadow-2xl">
             <div class="flex justify-between mb-4"><h3 class="font-bold text-lg text-[#283618]">{{ isEditingActivity ? '編輯行程' : '新增行程' }}</h3><button @click="showActivityForm=false" class="text-2xl text-stone-400">×</button></div>
             <div class="space-y-3">
                 <input v-model="activityForm.date" type="date" class="w-full border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]" />
                 <div class="flex gap-2">
                     <input v-model="activityForm.start_time" placeholder="時間 (09:00)" class="w-1/3 border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]" />
-                    <select v-model="activityForm.category" class="flex-1 border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]"><option>景點</option><option>交通</option><option>餐飲</option><option>住宿</option></select>
+                    <select v-model="activityForm.category" class="flex-1 border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]"><option>景點</option><option>交通</option><option>餐飲</option><option>活動</option><option>住宿</option></select>
                 </div>
                 <input v-model="activityForm.title" placeholder="名稱" class="w-full border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]" />
+                
+                <input v-model="activityForm.map_url" placeholder="📍 Google Map 連結" class="w-full border border-stone-300 p-2 rounded-xl bg-white text-sm text-[#606C38] focus:outline-none focus:border-[#606C38]" />
+
                 <textarea v-model="activityForm.description" placeholder="備註" class="w-full border border-stone-300 p-2 rounded-xl bg-white h-20 focus:outline-none focus:border-[#606C38]"></textarea>
                 <div class="flex gap-2 mt-2">
                     <button v-if="isEditingActivity" @click="handleDeleteActivity" class="bg-red-50 text-[#BC4749] flex-1 py-2 rounded-xl">刪除</button>
