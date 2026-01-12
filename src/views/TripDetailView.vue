@@ -43,8 +43,8 @@
       isEditingAttraction.value = false
       editingAttractionId.value = null
       attractionForm.value = {
-        title: '', subtitle: '', location_tag: '大阪', description: '', highlights: '', 
-        transport_info: '', must_eat: '', ticket_price: '免費', opening_hours: '10:00 - 20:00', map_url: ''
+        title: '', subtitle: '', location_tag: '', description: '', highlights: '', 
+        transport_info: '', must_eat: '', ticket_price: '', opening_hours: '', map_url: ''
       }
     }
     showAttractionForm.value = true
@@ -354,8 +354,10 @@
     </nav>
 
     <section v-show="activeTab==='transport'" class="px-4 pb-20">
-        <div class="mb-4 pl-1">
-             <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2"><span class="text-xl">🚆</span> 交通詳細指南</h2>
+        <div class="flex justify-between items-center mb-4 pl-1">
+            <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2">
+                <span class="text-2xl">🚆</span> 交通詳細指南
+            </h2>
              <!-- <span class="text-xs text-stone-400 block mt-1">每段路線附詳細搭乘步驟</span> -->
         </div>
 
@@ -399,13 +401,13 @@
                     </div>
 
                     <a v-if="trans.map_url" :href="trans.map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-sm active:scale-[0.99] transition-all flex justify-center items-center gap-2">
-                        <span>🗺️</span> Google 地圖查看路線
+                        <span>🗺️</span> Google 地圖導航
                     </a>
                 </div>
             </div>
 
              <div v-if="transports.length === 0" class="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl bg-stone-50">
-                <p class="text-stone-400 mb-2">尚未建立交通路線</p>
+                <p class="text-stone-400 mb-2">這裡空空如也</p>
                 <button @click="openTransportForm()" class="text-[#BC4749] font-bold hover:underline">新增第一條路線</button>
             </div>
         </div>
@@ -414,7 +416,10 @@
     </section>
 
     <section v-show="activeTab==='attractions'" class="px-4 pb-20">
-        <div class="flex justify-between items-center mb-4 pl-1"><h2 class="text-xl font-bold text-[#283618]"> 🌅 景點詳細介紹</h2>
+        <div class="flex justify-between items-center mb-4 pl-1">
+            <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2"> 
+                <span class="text-2xl">🌅</span> 景點詳細介紹
+            </h2>
           <!-- <span class="text-xs text-stone-400">點擊地圖按鈕直接導航</span> -->
         </div>
          <div class="grid gap-6">
@@ -451,7 +456,7 @@
                          <div class="flex items-start gap-3" v-if="attr.ticket_price"><div class="w-5 text-center text-lg">🎫</div><div class="flex-1">{{ attr.ticket_price }}</div></div>
                     </div>
                     
-                    <a v-if="attr.map_url" :href="attr.map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-md active:scale-[0.98] transition-all flex justify-center items-center gap-2"><span>📍</span> Google 地圖導航</a>
+                    <a v-if="attr.map_url" :href="attr.map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-md active:scale-[0.98] transition-all flex justify-center items-center gap-2"><span>🗺️</span> Google 地圖導航</a>
                 </div>
             </div>
             <div v-if="attractions.length === 0" class="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl bg-stone-50"><p class="text-stone-400 mb-2">這裡空空如也</p><button @click="openAttractionForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個景點</button></div>
@@ -459,28 +464,45 @@
         <button @click="openAttractionForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
     </section>
 
-    <section v-show="activeTab==='itinerary'">
-         <div class="sticky top-16 z-10 bg-[#FDFCF8]/95 backdrop-blur-sm border-b border-stone-200 pt-2">
+<section v-show="activeTab==='itinerary'">
+        <div v-if="activities.length > 0" class="sticky top-16 z-10 bg-[#FDFCF8]/95 backdrop-blur-sm border-b border-stone-200 pt-2">
             <div class="flex overflow-x-auto px-4 pb-3 gap-3 no-scrollbar">
-            <button v-for="date in uniqueDates" :key="date" @click="selectedDate = date" class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all shadow-sm border" :class="selectedDate === date ? 'bg-[#283618] text-white border-[#283618]' : 'bg-white text-stone-500 border-stone-200 hover:border-[#606C38]'">{{ date.slice(5) }}</button>
+                <button v-for="date in uniqueDates" :key="date" @click="selectedDate = date" class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all shadow-sm border" :class="selectedDate === date ? 'bg-[#283618] text-white border-[#283618]' : 'bg-white text-stone-500 border-stone-200 hover:border-[#606C38]'">
+                    {{ date.slice(5) }}
+                </button>
             </div>
         </div>
+
         <div class="p-4 space-y-4">
-            <div v-for="act in filteredActivities" :key="act.id" @click="openActivityForm(act)" class="bg-white p-4 rounded-2xl shadow-sm border border-stone-100 flex gap-4 cursor-pointer hover:border-[#D4A373] transition-colors">
-                <div class="flex flex-col items-center w-14 border-r border-stone-100 pr-2">
-                    <span class="text-[#BC4749] font-black font-mono text-sm">{{ act.start_time || '--:--' }}</span>
-                    <span class="text-[10px] text-stone-400 mt-1">{{ act.category }}</span>
-                </div>
-                <div class="flex-1">
-                    <div class="flex items-center gap-1 mb-1"><span>{{ getIcon(act.category) }}</span><h3 class="font-bold text-[#283618]">{{ act.title }}</h3></div>
-                    <p class="text-stone-500 text-xs mt-1 line-clamp-2">{{ act.description }}</p>
-                </div>
+            <div v-if="activities.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300">
+                <p class="text-stone-400 mb-2">這裡空空如也</p>
+                <button @click="openActivityForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個行程</button>
             </div>
-            <div v-if="filteredActivities.length === 0" class="text-center py-20 text-stone-400"><p>這一天還沒有行程喔</p></div>
+
+            <template v-else>
+                <div v-for="act in filteredActivities" :key="act.id" @click="openActivityForm(act)" class="bg-white p-4 rounded-2xl shadow-sm border border-stone-100 flex gap-4 cursor-pointer hover:border-[#D4A373] transition-colors">
+                    <div class="flex flex-col items-center w-14 border-r border-stone-100 pr-2">
+                        <span class="text-[#BC4749] font-black font-mono text-sm">{{ act.start_time || '--:--' }}</span>
+                        <span class="text-[10px] text-stone-400 mt-1">{{ act.category }}</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-1 mb-1">
+                            <span>{{ getIcon(act.category) }}</span>
+                            <h3 class="font-bold text-[#283618]">{{ act.title }}</h3>
+                        </div>
+                        <p class="text-stone-500 text-xs mt-1 line-clamp-2">{{ act.description }}</p>
+                    </div>
+                </div>
+
+                <div v-if="filteredActivities.length === 0" class="text-center py-20 text-stone-400">
+                    <p>這一天還沒有行程喔</p>
+                    <button @click="openActivityForm()" class="text-[#BC4749] text-xs font-bold mt-2 hover:underline">+ 點此新增</button>
+                </div>
+            </template>
         </div>
+
         <button @click="openActivityForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-20 transition hover:scale-110 active:scale-95">+</button>
     </section>
-
     <section v-show="activeTab==='accommodation'" class="px-4 pb-20">
         <div class="flex justify-between items-center mb-4 pl-1">
             <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2">
@@ -489,11 +511,15 @@
              <span class="text-xs text-stone-400" v-if="accommodations.length > 0">共 {{ accommodations.length }} 間</span>
         </div>
 
+
+
+        
+
         <div v-if="accommodations.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300">
-            <p class="text-stone-400 mb-4">尚未建立住宿資訊</p>
+            <p class="text-stone-400 mb-2">這裡空空如也</p>
             <button @click="openAccEdit()" class="text-[#BC4749] font-bold hover:underline">新增第一間住宿</button>
         </div>
-        
+
         <div v-else class="space-y-8">
             <div v-for="item in accommodations" :key="item.id">
                 <div class="bg-white rounded-xl shadow-md border border-stone-100 overflow-hidden relative group hover:shadow-lg transition-shadow">
@@ -676,7 +702,7 @@
                     <div><label class="text-[10px] text-stone-400">時間</label><input v-model="accForm.check_out_time" class="w-full bg-white border border-stone-300 rounded px-1 py-1" /></div>
                 </div>
                 <div><label class="text-xs text-stone-500">地址</label><input v-model="accForm.address" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
-                <div><label class="text-xs text-stone-500">最近車站</label><input v-model="accForm.station" placeholder="例如: JR今宮站 (步行2分)" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
+                <div><label class="text-xs text-stone-500">最近車站</label><input v-model="accForm.station" placeholder="例如: JR淺草站 (步行5分)" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
                 <div><label class="text-xs text-stone-500">Google Map URL</label><input v-model="accForm.google_map_url" class="w-full border border-stone-300 bg-white rounded px-2 py-2 text-[#606C38] focus:outline-none focus:border-[#606C38]" /></div>
                 <div class="bg-stone-50 p-3 rounded border border-stone-200">
                     <label class="text-xs font-bold mb-2 block text-stone-700">交通步驟</label>

@@ -8,6 +8,14 @@ const trips = ref<any[]>([])
 const newTripName = ref('') // 首頁輸入框暫存用
 const isLoading = ref(true)
 
+// Supabase 離線處理變數
+const isOffline = ref(!navigator.onLine)
+
+onMounted(() => {
+  window.addEventListener('online', () => isOffline.value = false)
+  window.addEventListener('offline', () => isOffline.value = true)
+})
+
 // --- 新增行程 Modal 相關變數 ---
 const showCreateModal = ref(false)
 const createForm = ref({
