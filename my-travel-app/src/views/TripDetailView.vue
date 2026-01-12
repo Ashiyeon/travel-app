@@ -18,71 +18,6 @@
     router.push('/')
   }
 
-  // ==========================================
-  //  PART 4: 交通 (Transport)
-  // ==========================================
-  const transports = ref<any[]>([])
-  const showTransportForm = ref(false)
-  const isEditingTransport = ref(false)
-  const editingTransportId = ref<number | null>(null)
-
-  const transportForm = ref({
-    title: '', transport_type: '', duration: '', price: '', map_url: '',
-    steps: [] as any[] 
-  })
-
-  function openTransportForm(item?: any) {
-    if (item) {
-      isEditingTransport.value = true
-      editingTransportId.value = item.id
-      transportForm.value = { ...item, steps: item.steps || [] }
-    } else {
-      isEditingTransport.value = false
-      editingTransportId.value = null
-      transportForm.value = {
-        title: '', transport_type: '', duration: '', price: '', map_url: '',
-        steps: [{ title: '', desc: '', tip: '' }]
-      }
-    }
-    showTransportForm.value = true
-  }
-
-  function addTransStep() {
-    transportForm.value.steps.push({ title: '', desc: '', tip: '' })
-  }
-
-  function removeTransStep(idx: number) {
-    if (transportForm.value.steps.length > 1) {
-        transportForm.value.steps.splice(idx, 1)
-    }
-  }
-
-  async function handleSaveTransport() {
-    if (!transportForm.value.title) return alert('請填寫路線名稱')
-    const payload = { ...transportForm.value, trip_id: tripId }
-    delete (payload as any).id
-
-    let error = null
-    if (isEditingTransport.value && editingTransportId.value) {
-        const res = await supabase.from('transports').update(payload).eq('id', editingTransportId.value)
-        error = res.error
-    } else {
-        const res = await supabase.from('transports').insert([payload])
-        error = res.error
-    }
-    if (!error) { showTransportForm.value = false; loadTransportData() } else alert(error.message)
-  }
-
-  async function handleDeleteTransport() {
-     if (!editingTransportId.value || !confirm('確定刪除此路線？')) return
-     const { error } = await supabase.from('transports').delete().eq('id', editingTransportId.value)
-     if (!error) { showTransportForm.value = false; loadTransportData() }
-  }
-
-  async function loadTransportData() {
-    const { data } = await supabase.from('transports').select('*').eq('trip_id', tripId).order('id')
-    transports.value = data || []
-  }
 
   
   // ==========================================
@@ -304,6 +239,72 @@
 
   const getDisplayCheckInDate = (item: any) => item.check_in_date ? `${new Date(item.check_in_date).getMonth() + 1}月${new Date(item.check_in_date).getDate()}日` : '未設定'
   const getStayDuration = (item: any) => (item.check_in_date && item.check_out_date) ? Math.max(0, Math.ceil((new Date(item.check_out_date).getTime() - new Date(item.check_in_date).getTime()) / 86400000)) : 1
+
+  // ==========================================
+  //  PART 4: 交通 (Transport)
+  // ==========================================
+  const transports = ref<any[]>([])
+  const showTransportForm = ref(false)
+  const isEditingTransport = ref(false)
+  const editingTransportId = ref<number | null>(null)
+
+  const transportForm = ref({
+    title: '', transport_type: '', duration: '', price: '', map_url: '',
+    steps: [] as any[] 
+  })
+
+  function openTransportForm(item?: any) {
+    if (item) {
+      isEditingTransport.value = true
+      editingTransportId.value = item.id
+      transportForm.value = { ...item, steps: item.steps || [] }
+    } else {
+      isEditingTransport.value = false
+      editingTransportId.value = null
+      transportForm.value = {
+        title: '', transport_type: '', duration: '', price: '', map_url: '',
+        steps: [{ title: '', desc: '', tip: '' }]
+      }
+    }
+    showTransportForm.value = true
+  }
+
+  function addTransStep() {
+    transportForm.value.steps.push({ title: '', desc: '', tip: '' })
+  }
+
+  function removeTransStep(idx: number) {
+    if (transportForm.value.steps.length > 1) {
+        transportForm.value.steps.splice(idx, 1)
+    }
+  }
+
+  async function handleSaveTransport() {
+    if (!transportForm.value.title) return alert('請填寫路線名稱')
+    const payload = { ...transportForm.value, trip_id: tripId }
+    delete (payload as any).id
+
+    let error = null
+    if (isEditingTransport.value && editingTransportId.value) {
+        const res = await supabase.from('transports').update(payload).eq('id', editingTransportId.value)
+        error = res.error
+    } else {
+        const res = await supabase.from('transports').insert([payload])
+        error = res.error
+    }
+    if (!error) { showTransportForm.value = false; loadTransportData() } else alert(error.message)
+  }
+
+  async function handleDeleteTransport() {
+     if (!editingTransportId.value || !confirm('確定刪除此路線？')) return
+     const { error } = await supabase.from('transports').delete().eq('id', editingTransportId.value)
+     if (!error) { showTransportForm.value = false; loadTransportData() }
+  }
+
+  async function loadTransportData() {
+    const { data } = await supabase.from('transports').select('*').eq('trip_id', tripId).order('id')
+    transports.value = data || []
+  }
 
 
   // ==========================================
