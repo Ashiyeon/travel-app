@@ -356,7 +356,7 @@
       </div>
     </div>
 
-    <nav class="bg-white rounded-2xl shadow-sm border border-stone-100 mb-4 mx-4 flex justify-between px-3 py-2 sticky top-2 z-20">
+    <nav class="bg-white rounded-2xl shadow-sm border border-stone-100 mb-4 mx-4 flex justify-between px-3 py-2 z-20">
       <button class="tab" :class="{ active: activeTab==='itinerary' }" @click="activeTab='itinerary'"><div class="icon">🗓️</div><div class="label">行程</div></button>
       <button class="tab" :class="{ active: activeTab==='attractions' }" @click="activeTab='attractions'"><div class="icon">📍</div><div class="label">景點</div></button>
       <button class="tab" :class="{ active: activeTab==='accommodation' }" @click="activeTab='accommodation'"><div class="icon">🛏️</div><div class="label">住宿</div></button>
