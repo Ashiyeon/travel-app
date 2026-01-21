@@ -1,5 +1,96 @@
-# Vue 3 + TypeScript + Vite
+# 旅程管理應用
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+一個功能完整的旅程規劃和管理應用，包括行程規劃、景點介紹、住宿安排和**旅程記帳**功能。
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## ✨ 主要功能
+
+### 核心功能
+- 📅 **行程規劃** - 按日期管理旅程行程
+- 📍 **景點介紹** - 保存景點信息和推薦
+- 🛏️ **住宿管理** - 記錄住宿地點和交通方式
+- 💰 **旅程記帳** - 完整的記帳和清算系統
+
+### 記帳功能 (NEW!)
+- 🏷️ **快速記帳** - 8個分類快捷鍵
+- 💵 **支付方式** - 現金、信用卡、IC卡
+- 💱 **匯率管理** - 支持多幣別換算
+- 👥 **分帳計算** - 自動計算分擔費用
+- 🧮 **清算建議** - 自動生成清算報告
+
+## 🚀 快速開始
+
+### 1. 數據庫設置
+```bash
+# 在 Supabase SQL Editor 中執行
+```
+
+### 2. 安裝和運行
+```bash
+# 安裝依賴
+npm install
+
+# 啟動開發伺服器
+npm run dev
+
+# 訪問 http://localhost:5174/travel-app/
+```
+
+### 3. 開始使用
+1. 創建或選擇旅程
+2. 進入旅程詳細頁面
+3. 點擊 **💰 記帳** 標籤
+4. 開始記帳！
+
+## 🛠️ 技術棧
+
+- **前端**: Vue 3 + TypeScript + Vite
+- **樣式**: Tailwind CSS
+- **後端**: Supabase (PostgreSQL)
+- **路由**: Vue Router
+
+## 📱 支持平台
+
+✅ 桌面瀏覽器 (Chrome, Firefox, Safari, Edge)
+✅ 移動瀏覽器
+✅ 平板設備
+
+## 🎯 功能特性
+
+### 記帳系統
+- ✅ 即時記帳輸入
+- ✅ 8種消費分類
+- ✅ 多幣別支持
+- ✅ 自動匯率換算
+- ✅ 靈活分帳設置
+- ✅ 自動清算計算
+- ✅ 完整的 CRUD 操作
+
+### 使用者體驗
+- ✅ 響應式設計
+- ✅ 移動優化
+- ✅ 快速操作
+- ✅ 實時反饋
+
+## 📖 使用示例
+
+### 記一筆早餐費用
+```
+1. 進入記帳頁面
+2. 點擊 🍽️ 餐飲 分類
+3. 填寫：
+   - 項目名稱: 築地早餐
+   - 金額: 3000
+   - 幣別: JPY
+   - 誰付的: 小王
+   - 分擔人員: 小李, 小張
+4. 儲存
+```
+
+### 查看清算建議
+```
+進入記帳頁面 → 下滑至底部 → 查看 🧮 清算建議
+```
+---
+
+**最後更新**: 2026年1月22日
+**版本**: 1.0.0

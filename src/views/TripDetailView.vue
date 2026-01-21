@@ -286,69 +286,219 @@
 
 
 
-  //  PART 4: 交通 (Transport)
-  const transports = ref<any[]>([])
-  const showTransportForm = ref(false)
-  const isEditingTransport = ref(false)
-  const editingTransportId = ref<number | null>(null)
+  //  PART 4: 記帳 (Expenses)
+  const expenses = ref<any[]>([])
+  const showExpenseForm = ref(false)
+  const isEditingExpense = ref(false)
+  const editingExpenseId = ref<number | null>(null)
+  
+  // 記帳分類
+  const expenseCategories = [
+    { name: '餐飲', icon: '🍽️' },
+    { name: '交通', icon: '🚌' },
+    { name: '住宿', icon: '🛏️' },
+    { name: '門票', icon: '🎫' },
+    { name: '伴手禮', icon: '🎁' },
+    { name: '購物', icon: '🛍️' },
+    { name: '機票', icon: '✈️' },
+    { name: '其他', icon: '📍' }
+  ]
 
-  const transportForm = ref({
-    title: '', transport_type: '', duration: '', price: '', map_url: '',
-    steps: [] as any[] 
+  // 支付方式
+  const paymentMethods = ['現金', '信用卡', 'IC卡']
+
+  // 空白記帳表單
+  const expenseForm = ref({
+    title: '',
+    amount_original: 0,
+    currency: 'JPY',
+    exchange_rate: 0.215,
+    category: '餐飲',
+    payment_method: '現金',
+    expense_date: new Date().toISOString().split('T')[0],
+    note: '',
+    paid_by: '', // 誰付的
+    split_with: [] as string[] // 分擔的人
   })
 
-  function openTransportForm(item?: any) {
-    if (item) {
-      isEditingTransport.value = true
-      editingTransportId.value = item.id
-      transportForm.value = { ...item, steps: item.steps || [] }
+  function openExpenseForm(expense?: any) {
+    if (expense) {
+      isEditingExpense.value = true
+      editingExpenseId.value = expense.id
+      expenseForm.value = { ...expense }
     } else {
-      isEditingTransport.value = false
-      editingTransportId.value = null
-      transportForm.value = {
-        title: '', transport_type: '', duration: '', price: '', map_url: '',
-        steps: [{ title: '', desc: '', tip: '' }]
+      isEditingExpense.value = false
+      editingExpenseId.value = null
+      expenseForm.value = {
+        title: '',
+        amount_original: 0,
+        currency: 'JPY',
+        exchange_rate: 0.215,
+        category: '餐飲',
+        payment_method: '現金',
+        expense_date: new Date().toISOString().split('T')[0],
+        note: '',
+        paid_by: '',
+        split_with: []
       }
     }
-    showTransportForm.value = true
+    showExpenseForm.value = true
   }
 
-  function addTransStep() {
-    transportForm.value.steps.push({ title: '', desc: '', tip: '' })
-  }
-
-  function removeTransStep(idx: number) {
-    if (transportForm.value.steps.length > 1) {
-        transportForm.value.steps.splice(idx, 1)
+  async function handleSaveExpense() {
+    if (!expenseForm.value.title || expenseForm.value.amount_original === 0) return alert('請填寫項目名稱與金額')
+    if (!expenseForm.value.paid_by) return alert('請選擇誰付款')
+    
+    const payload = {
+      trip_id: tripId,
+      title: expenseForm.value.title,
+      amount_original: expenseForm.value.amount_original,
+      currency: expenseForm.value.currency,
+      exchange_rate: expenseForm.value.exchange_rate,
+      category: expenseForm.value.category,
+      payment_method: expenseForm.value.payment_method,
+      expense_date: expenseForm.value.expense_date,
+      note: expenseForm.value.note,
+      paid_by: expenseForm.value.paid_by,
+      split_with: expenseForm.value.split_with
     }
-  }
-
-  async function handleSaveTransport() {
-    if (!transportForm.value.title) return alert('請填寫路線名稱')
-    const payload = { ...transportForm.value, trip_id: tripId }
     delete (payload as any).id
 
     let error = null
-    if (isEditingTransport.value && editingTransportId.value) {
-        const res = await supabase.from('transports').update(payload).eq('id', editingTransportId.value)
+    if (isEditingExpense.value && editingExpenseId.value) {
+        const res = await supabase.from('travel_expenses').update(payload).eq('id', editingExpenseId.value)
         error = res.error
     } else {
-        const res = await supabase.from('transports').insert([payload])
+        const res = await supabase.from('travel_expenses').insert([payload])
         error = res.error
     }
-    if (!error) { showTransportForm.value = false; loadTransportData() } else alert(error.message)
+    if (!error) { showExpenseForm.value = false; loadExpensesData() } else alert(error.message)
   }
 
-  async function handleDeleteTransport() {
-     if (!editingTransportId.value || !confirm('確定刪除此路線？')) return
-     const { error } = await supabase.from('transports').delete().eq('id', editingTransportId.value)
-     if (!error) { showTransportForm.value = false; loadTransportData() }
+  async function handleDeleteExpense() {
+     if (!editingExpenseId.value || !confirm('確定刪除此記帳？')) return
+     const { error } = await supabase.from('travel_expenses').delete().eq('id', editingExpenseId.value)
+     if (!error) { showExpenseForm.value = false; loadExpensesData() }
   }
 
-  async function loadTransportData() {
-    const { data } = await supabase.from('transports').select('*').eq('trip_id', tripId).order('id')
-    transports.value = data || []
+  async function loadExpensesData() {
+      const { data } = await supabase.from('travel_expenses').select('*').eq('trip_id', tripId).order('expense_date', { ascending: false })
+      expenses.value = data || []
   }
+
+  // 計算 TWD 金額
+  const calculateAmountTWD = (expense: any) => Math.round(expense.amount_original * expense.exchange_rate)
+
+  // 清算計算邏輯
+  const settlementCalculation = computed(() => {
+    const settlement: any = {}
+    
+    expenses.value.forEach(expense => {
+      const amountTWD = calculateAmountTWD(expense)
+      
+      // 初始化付款人
+      if (!settlement[expense.paid_by]) {
+        settlement[expense.paid_by] = { paid: 0, should_pay: 0 }
+      }
+      settlement[expense.paid_by].paid += amountTWD
+      
+      // 分擔的人 (包括付款人)
+      const splits = [...(expense.split_with || []), expense.paid_by]
+      const uniqueSplits = [...new Set(splits)]
+      const perPerson = amountTWD / uniqueSplits.length
+      
+      uniqueSplits.forEach(person => {
+        if (!settlement[person]) {
+          settlement[person] = { paid: 0, should_pay: 0 }
+        }
+        settlement[person].should_pay += perPerson
+      })
+    })
+
+    // 計算誰應該付給誰
+    const transactions: any[] = []
+    Object.entries(settlement).forEach(([person, amounts]: any) => {
+      const balance = amounts.paid - amounts.should_pay
+      if (balance > 0) {
+        transactions.push({ from: person, balance: Math.round(balance) })
+      }
+    })
+
+    Object.entries(settlement).forEach(([person, amounts]: any) => {
+      const balance = amounts.should_pay - amounts.paid
+      if (balance > 0) {
+        transactions.push({ to: person, balance: Math.round(balance) })
+      }
+    })
+
+    return { settlement, transactions }
+  })
+
+
+
+  //  PART 5: 交通 (Transport)
+//   const transports = ref<any[]>([])
+//   const showTransportForm = ref(false)
+//   const isEditingTransport = ref(false)
+//   const editingTransportId = ref<number | null>(null)
+
+//   const transportForm = ref({
+//     title: '', transport_type: '', duration: '', price: '', map_url: '',
+//     steps: [] as any[] 
+//   })
+
+//   function openTransportForm(item?: any) {
+//     if (item) {
+//       isEditingTransport.value = true
+//       editingTransportId.value = item.id
+//       transportForm.value = { ...item, steps: item.steps || [] }
+//     } else {
+//       isEditingTransport.value = false
+//       editingTransportId.value = null
+//       transportForm.value = {
+//         title: '', transport_type: '', duration: '', price: '', map_url: '',
+//         steps: [{ title: '', desc: '', tip: '' }]
+//       }
+//     }
+//     showTransportForm.value = true
+//   }
+
+//   function addTransStep() {
+//     transportForm.value.steps.push({ title: '', desc: '', tip: '' })
+//   }
+
+//   function removeTransStep(idx: number) {
+//     if (transportForm.value.steps.length > 1) {
+//         transportForm.value.steps.splice(idx, 1)
+//     }
+//   }
+
+//   async function handleSaveTransport() {
+//     if (!transportForm.value.title) return alert('請填寫路線名稱')
+//     const payload = { ...transportForm.value, trip_id: tripId }
+//     delete (payload as any).id
+
+//     let error = null
+//     if (isEditingTransport.value && editingTransportId.value) {
+//         const res = await supabase.from('transports').update(payload).eq('id', editingTransportId.value)
+//         error = res.error
+//     } else {
+//         const res = await supabase.from('transports').insert([payload])
+//         error = res.error
+//     }
+//     if (!error) { showTransportForm.value = false; loadTransportData() } else alert(error.message)
+//   }
+
+//   async function handleDeleteTransport() {
+//      if (!editingTransportId.value || !confirm('確定刪除此路線？')) return
+//      const { error } = await supabase.from('transports').delete().eq('id', editingTransportId.value)
+//      if (!error) { showTransportForm.value = false; loadTransportData() }
+//   }
+
+//   async function loadTransportData() {
+//     const { data } = await supabase.from('transports').select('*').eq('trip_id', tripId).order('id')
+//     transports.value = data || []
+//   }
 
 
   // ==========================================
@@ -375,7 +525,8 @@
     loadAttractionsData()
     loadActivitiesData()
     loadAccommodationData()
-    loadTransportData()
+    loadExpensesData()
+    // loadTransportData()
   }
   
   onMounted(loadData)
@@ -406,7 +557,8 @@
       <button class="tab" :class="{ active: activeTab==='itinerary' }" @click="activeTab='itinerary'"><div class="icon">🗓️</div><div class="label">行程</div></button>
       <button class="tab" :class="{ active: activeTab==='attractions' }" @click="activeTab='attractions'"><div class="icon">📍</div><div class="label">景點</div></button>
       <button class="tab" :class="{ active: activeTab==='accommodation' }" @click="activeTab='accommodation'"><div class="icon">🛏️</div><div class="label">住宿</div></button>
-      <button class="tab" :class="{ active: activeTab==='transport' }" @click="activeTab='transport'"><div class="icon">🚌</div><div class="label">交通</div></button>
+      <button class="tab" :class="{ active: activeTab==='expenses' }" @click="activeTab='expenses'"><div class="icon">💰</div><div class="label">記帳</div></button>
+      <!-- <button class="tab" :class="{ active: activeTab==='transport' }" @click="activeTab='transport'"><div class="icon">🚌</div><div class="label">交通</div></button> -->
     </nav>
 
     <div v-if="activeTab === 'itinerary' || activeTab === 'attractions'" class=" z-10 bg-[#FDFCF8]/95 backdrop-blur-sm border-b border-stone-200 pt-2 mb-4">
@@ -628,8 +780,94 @@
         <button v-if="isEditMode" @click="openAccEdit()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
     </section>
 
+    <!-- 記帳詳細指南 -->
+    <section v-show="activeTab==='expenses'" class="px-4 pb-20">
+        <div class="flex justify-between items-center mb-4 pl-1">
+            <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2">
+                <span class="text-2xl">💰</span> 旅程記帳
+            </h2>
+            <span class="test-s text-stone-400" v-if="expenses.length > 0">共 {{ expenses.length }} 筆</span>
+        </div>
+
+        <!-- 快速記帳按鈕 -->
+        <div v-if="isEditMode" class="bg-white rounded-xl shadow-sm border border-stone-100 p-4 mb-6">
+            <p class="test-s text-stone-600 font-bold mb-3">快速記帳</p>
+            <div class="grid grid-cols-4 gap-2">
+                <button v-for="cat in expenseCategories" :key="cat.name" @click="expenseForm.category = cat.name; openExpenseForm()" class="p-3 rounded-lg bg-stone-50 hover:bg-[#E9EDC9] border border-stone-200 hover:border-[#606C38] transition-all flex flex-col items-center gap-1 group">
+                    <span class="text-2xl group-hover:scale-110 transition">{{ cat.icon }}</span>
+                    <span class="text-[10px] font-bold text-stone-700">{{ cat.name }}</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 記帳統計 -->
+        <div v-if="expenses.length > 0" class="bg-gradient-to-br from-[#E9EDC9] to-[#F5F5F4] rounded-xl border border-[#D4A373]/30 p-4 mb-6">
+            <div class="grid grid-cols-3 gap-4">
+                <div class="text-center">
+                    <p class="test-s text-stone-600 mb-1">總支出 (TWD)</p>
+                    <p class="text-xl font-bold text-[#BC4749]">{{ Math.round(expenses.reduce((sum, e) => sum + calculateAmountTWD(e), 0)) }}</p>
+                </div>
+                <div class="text-center border-l border-r border-[#D4A373]/30">
+                    <p class="test-s text-stone-600 mb-1">平均每人</p>
+                    <p class="text-xl font-bold text-[#606C38]">{{ expenses.length > 0 ? Math.round(expenses.reduce((sum, e) => sum + calculateAmountTWD(e), 0) / (new Set(expenses.map(e => e.paid_by)).size || 1)) : 0 }}</p>
+                </div>
+                <div class="text-center">
+                    <p class="test-s text-stone-600 mb-1">記帳筆數</p>
+                    <p class="text-xl font-bold text-[#283618]">{{ expenses.length }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 記帳列表 -->
+        <div v-if="expenses.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300">
+            <p class="text-stone-400 mb-2">{{ isEditMode ? '還沒有任何記帳' : '暫無記帳資料' }}</p>
+            <button v-if="isEditMode" @click="openExpenseForm()" class="text-[#BC4749] font-bold hover:underline">開始記帳</button>
+        </div>
+
+        <div v-else class="space-y-3">
+            <div v-for="expense in expenses" :key="expense.id" 
+                @click="isEditMode ? openExpenseForm(expense) : null" 
+                :class="{ 'cursor-default': !isEditMode, 'hover:shadow-md': isEditMode }"
+                class="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex justify-between items-center transition-shadow">
+                
+                <div class="flex-1 flex items-center gap-4">
+                    <span class="text-2xl">{{ expenseCategories.find(c => c.name === expense.category)?.icon || '📍' }}</span>
+                    <div class="flex-1">
+                        <p class="font-bold text-stone-800">{{ expense.title }}</p>
+                        <p class="test-s text-stone-500">{{ expense.expense_date }} · {{ expense.category }} · {{ expense.payment_method }}</p>
+                        <p v-if="expense.note" class="test-s text-stone-400 mt-1">{{ expense.note }}</p>
+                        <p v-if="expense.split_with && expense.split_with.length > 0" class="test-s text-stone-400 mt-1">分擔: {{ expense.split_with.join(', ') }}</p>
+                    </div>
+                </div>
+                
+                <div class="text-right">
+                    <p class="text-lg font-bold text-[#BC4749]">¥{{ expense.amount_original }}</p>
+                    <p class="test-s text-stone-400 font-mono">NT${{ calculateAmountTWD(expense) }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 清算結算 -->
+        <div v-if="expenses.length > 0 && settlementCalculation.settlement && Object.keys(settlementCalculation.settlement).length > 0" class="mt-8 bg-gradient-to-br from-[#FEF6E4] to-[#F5F5F4] rounded-xl border-2 border-[#D4A373]/50 p-5">
+            <h3 class="font-bold text-[#6F4E37] mb-4 flex items-center gap-2">🧮 清算建議</h3>
+            <div class="space-y-2">
+                <div v-for="(amount, person) in settlementCalculation.settlement" :key="person" class="bg-white rounded-lg p-3 border border-stone-200 flex justify-between items-center">
+                    <p class="font-bold text-stone-800">{{ person }}</p>
+                    <div class="text-right">
+                        <p class="test-s text-stone-500">已付 / 應付</p>
+                        <p class="font-bold text-[#283618]">NT${{ amount.paid }} / NT${{ Math.round(amount.should_pay) }}</p>
+                        <p v-if="amount.paid > amount.should_pay" class="text-[12px] text-[#06A77D] font-bold">應收 NT${{ Math.round(amount.paid - amount.should_pay) }}</p>
+                        <p v-else class="text-[12px] text-[#BC4749] font-bold">應付 NT${{ Math.round(amount.should_pay - amount.paid) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button v-if="isEditMode" @click="openExpenseForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+    </section>
+
     <!-- 交通詳細指南 -->
-    <section v-show="activeTab==='transport'" class="px-4 pb-20">
+    <!-- <section v-show="activeTab==='transport'" class="px-4 pb-20">
         <div class="flex justify-between items-center mb-4 pl-1">
             <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2">
                 <span class="text-xl">🚆</span> 交通詳細指南
@@ -685,10 +923,10 @@
                 <p class="text-stone-400 mb-2">{{ isEditMode ? '這裡空空如也' : '暫無交通資訊' }}</p>
                 <button v-if="isEditMode" @click="openTransportForm()" class="text-[#BC4749] font-bold hover:underline">新增第一條路線</button>
             </div>
-        </div>
+        </div> 
         
         <button v-if="isEditMode" @click="openTransportForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
-    </section>
+    </section> -->
 
 
     <!-- 行程表單 -->
@@ -795,8 +1033,94 @@
         </div>
     </div>
 
+    <!-- 記帳表單 -->
+    <div v-if="showExpenseForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" @click.self="showExpenseForm = false">
+        <div class="bg-[#FDFCF8] w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-5 sticky top-0 bg-[#FDFCF8] z-10 py-2 border-b border-stone-200"><h3 class="text-lg font-black text-[#283618]">{{ isEditingExpense ? '編輯記帳' : '新增記帳' }}</h3><button @click="showExpenseForm = false" class="text-stone-400 text-2xl">×</button></div>
+            <div class="space-y-4">
+                <!-- 基本信息 -->
+                <div>
+                    <label class="test-s text-stone-500 font-bold mb-1 block">項目名稱</label>
+                    <input v-model="expenseForm.title" placeholder="例如: 築地早餐" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 m focus:outline-none focus:border-[#606C38]" />
+                </div>
+                
+                <!-- 金額與匯率 -->
+                <div>
+                    <label class="test-s text-stone-500 font-bold mb-1 block">原始金額</label>
+                    <div class="flex gap-2">
+                        <input type="number" v-model.number="expenseForm.amount_original" placeholder="金額" class="flex-1 border border-stone-300 bg-white rounded-lg px-3 py-2 focus:outline-none focus:border-[#606C38]" />
+                        <select v-model="expenseForm.currency" class="w-20 border border-stone-300 bg-white rounded-lg px-2 py-2 focus:outline-none focus:border-[#606C38]">
+                            <option>JPY</option>
+                            <option>USD</option>
+                            <option>TWD</option>
+                        </select>
+                    </div>
+                    <p class="test-s text-stone-400 mt-1" v-if="expenseForm.amount_original">估算 TWD {{ calculateAmountTWD({ amount_original: expenseForm.amount_original, exchange_rate: expenseForm.exchange_rate }) }}</p>
+                </div>
+
+                <!-- 匯率設定 -->
+                <div>
+                    <label class="test-s text-stone-500 font-bold mb-1 block">匯率</label>
+                    <input type="number" v-model.number="expenseForm.exchange_rate" step="0.001" placeholder="0.215" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 focus:outline-none focus:border-[#606C38]" />
+                    <p class="test-s text-stone-400 mt-1">1 {{ expenseForm.currency }} = {{ expenseForm.exchange_rate }} TWD</p>
+                </div>
+
+                <!-- 分類 -->
+                <div>
+                    <label class="test-s text-stone-500 font-bold mb-2 block">分類</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button v-for="cat in expenseCategories" :key="cat.name" @click="expenseForm.category = cat.name" class="p-2 rounded-lg border-2 transition-all text-center" :class="expenseForm.category === cat.name ? 'bg-[#E9EDC9] border-[#606C38]' : 'bg-stone-50 border-stone-200 hover:border-[#606C38]'">
+                            <span class="text-xl block">{{ cat.icon }}</span>
+                            <span class="text-[10px] font-bold text-stone-700">{{ cat.name }}</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 支付方式 -->
+                <div>
+                    <label class="test-s text-stone-500 font-bold mb-2 block">支付方式</label>
+                    <div class="flex gap-2">
+                        <button v-for="method in paymentMethods" :key="method" @click="expenseForm.payment_method = method" class="flex-1 py-2 rounded-lg border-2 font-bold transition-all" :class="expenseForm.payment_method === method ? 'bg-[#283618] text-white border-[#283618]' : 'bg-white border-stone-300 text-stone-700 hover:border-[#606C38]'">
+                            {{ method }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 消費日期 -->
+                <div>
+                    <label class="test-s text-stone-500 font-bold mb-1 block">消費日期</label>
+                    <input v-model="expenseForm.expense_date" type="date" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 focus:outline-none focus:border-[#606C38]" />
+                </div>
+
+                <!-- 誰付款 -->
+                <div>
+                    <label class="test-s text-stone-500 font-bold mb-1 block">誰付的？ *必填</label>
+                    <input v-model="expenseForm.paid_by" placeholder="例如: 小王" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 m focus:outline-none focus:border-[#606C38]" />
+                </div>
+
+                <!-- 分擔人員 -->
+                <div>
+                    <label class="test-s text-stone-500 font-bold mb-1 block">分擔人員 (除了付款人外)</label>
+                    <textarea placeholder="例如: 小李, 小張" @input="(e: any) => expenseForm.split_with = e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s)" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 h-12 resize-none m focus:outline-none focus:border-[#606C38]">{{ expenseForm.split_with.join(', ') }}</textarea>
+                    <p class="test-s text-stone-400 mt-1" v-if="expenseForm.split_with.length > 0">分擔人: {{ expenseForm.split_with.join(', ') }}</p>
+                </div>
+
+                <!-- 備註 -->
+                <div>
+                    <label class="test-s text-stone-500 font-bold mb-1 block">備註 (可選)</label>
+                    <textarea v-model="expenseForm.note" placeholder="例如: 兩人份" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 h-12 resize-none m focus:outline-none focus:border-[#606C38]"></textarea>
+                </div>
+
+                <div class="flex gap-3 mt-6 pt-2 border-t border-stone-100">
+                    <button v-if="isEditingExpense" @click="handleDeleteExpense" class="bg-red-50 text-[#BC4749] px-4 py-3 rounded-xl font-bold m">刪除</button>
+                    <button @click="handleSaveExpense" class="flex-1 bg-[#283618] text-white py-3 rounded-xl font-bold hover:bg-[#3A5A40]">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 交通表單 -->
-    <div v-if="showTransportForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showTransportForm = false">
+    <!-- <div v-if="showTransportForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showTransportForm = false">
         <div class="bg-[#FDFCF8] w-full max-w-lg rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
              <div class="flex justify-between mb-4 items-center">
                 <h3 class="font-bold text-lg text-[#283618]">{{ isEditingTransport ? '編輯路線' : '新增路線' }}</h3>
@@ -834,7 +1158,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
 
   </div>
