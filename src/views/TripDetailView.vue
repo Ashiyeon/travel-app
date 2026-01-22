@@ -1,8 +1,110 @@
 <script setup lang="ts">
-  import { ref, onMounted, computed } from 'vue'
+  import { ref, onMounted, computed, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { supabase } from '../lib/supabaseClient'
   
+// --- 引入 Chart.js ---
+    import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
+    import { Doughnut } from 'vue-chartjs'
+
+    // 註冊元件
+    ChartJS.register(ArcElement, Tooltip, Legend)
+
+    // --- 計算圖表資料 ---
+    const expenseChartData = computed(() => {
+    // 1. 初始化分類金額
+    const categoryMap: Record<string, number> = {}
+    // 建立分類對應表 (確保順序)
+    expenseCategories.forEach(c => categoryMap[c.name] = 0)
+
+    // 2. 遍歷支出，換算成 TWD 並歸類
+    expenses.value.forEach((e: any) => {
+        // 這裡直接呼叫 calculateAmountTWD
+        const amount = calculateAmountTWD(e)
+        const category = e.category || '其他'
+        if (categoryMap[category] !== undefined) {
+        categoryMap[category] += amount
+        } else {
+        categoryMap['其他'] = (categoryMap['其他'] || 0) + amount
+        }
+    })
+    
+
+    // 3. 整理成 Chart.js 格式 (過濾掉金額為 0 的分類)
+    const labels: string[] = []
+    const data: number[] = []
+    
+    // 設定與 App 風格一致的色票 (更鮮明的顏色)
+    const backgroundColors = [
+        '#BC4749', // 餐飲 (紅)
+        '#2E8B57', // 交通 (海綠)
+        '#D4A373', // 住宿 (棕)
+        '#FF6B35', // 門票 (橙紅)
+        '#8B4513', // 伴手禮 (巧克力棕)
+        '#32CD32', // 購物 (萊姆綠)
+        '#1E90FF', // 機票 (道奇藍)
+        '#696969'  // 其他 (暗灰)
+    ]
+
+    Object.entries(categoryMap).forEach(([key, value]) => {
+        if (value > 0) {
+        labels.push(key)
+        data.push(value)
+        }
+    })
+
+    return {
+        labels: labels,
+        datasets: [{
+        backgroundColor: backgroundColors,
+        data: data,
+        borderWidth: 0
+        }]
+    }
+    })
+
+    // 圖表設定
+    const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+        position: 'right' as const, // 圖例放右邊
+        labels: {
+            usePointStyle: true, // 用圓點代替方塊
+            boxWidth: 8,
+            font: { size: 12 },
+            generateLabels: (chart: any) => {
+                const data = chart.data;
+                if (data.labels.length && data.datasets.length) {
+                    const total = data.datasets[0].data.reduce((a: number, b: number) => a + b, 0);
+                    return data.labels.map((label: string, i: number) => {
+                        const value = data.datasets[0].data[i];
+                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                        return {
+                            text: `${label}: ${percentage}%`,
+                            fillStyle: data.datasets[0].backgroundColor[i],
+                            hidden: false,
+                            index: i
+                        };
+                    });
+                }
+                return [];
+            }
+        }
+        },
+        tooltip: {
+            callbacks: {
+                label: (context: any) => {
+                    const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+                    const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : '0';
+                    return `${context.label}: NT$ ${context.parsed.toLocaleString()} (${percentage}%)`;
+                }
+            }
+        }
+    }
+    }
+
   const route = useRoute()
   const router = useRouter()
   const tripId = route.params.id
@@ -13,6 +115,7 @@
   const tripDates = ref('')
   const subtitleRaw = ref('')
   const startDateRaw = ref('')
+  const tripMembers = ref<string[]>([])
 
   // --- 管理員權限控制 ---
   const isEditMode = ref(false)
@@ -321,11 +424,37 @@
     split_with: [] as string[] // 分擔的人
   })
 
-  function openExpenseForm(expense?: any) {
+
+    // 幣值符號
+    function getCurrencySymbol(currency: string) {
+        switch (currency) {
+        case 'JPY': return '¥'
+        case 'USD': return '$'
+        case 'TWD': return 'NT$'
+        case 'EUR': return '€'
+        case 'KRW': return '₩'
+        default: return currency // 如果是其他幣別，直接顯示代碼 (如 GBP)
+        }
+    }
+
+    function calculateAmountTWD(expense: any) {
+    // 防呆機制：如果沒有金額或匯率，回傳 0
+    if (!expense || !expense.amount_original || !expense.exchange_rate) return 0
+    // 計算並四雪五入
+    return Math.round(expense.amount_original * expense.exchange_rate)
+    }
+
+    function openExpenseForm(expense?: any) {
     if (expense) {
       isEditingExpense.value = true
       editingExpenseId.value = expense.id
-      expenseForm.value = { ...expense }
+      
+      expenseForm.value = { 
+        ...expense,
+        paid_by: expense.paid_by ?? '', 
+        split_with: expense.split_with || [] 
+      }
+
     } else {
       isEditingExpense.value = false
       editingExpenseId.value = null
@@ -336,16 +465,29 @@
         exchange_rate: 0.215,
         category: '餐飲',
         payment_method: '現金',
-        expense_date: new Date().toISOString().split('T')[0],
+        expense_date: selectedDate.value || new Date().toISOString().split('T')[0],
         note: '',
-        paid_by: '',
-        split_with: []
-      }
+        paid_by: tripMembers.value[0] || '',
+        split_with: [...tripMembers.value]     }
+      // 自動獲取匯率
+      fetchExchangeRate('JPY').then(rate => {
+        if (rate) {
+          expenseForm.value.exchange_rate = rate
+        }
+      })
     }
     showExpenseForm.value = true
   }
 
+
   async function handleSaveExpense() {
+
+    if (expenseForm.value.split_with.length === 0) {
+
+    // 自動設為付款人自己 (代表這是個人消費)
+        expenseForm.value.split_with = [expenseForm.value.paid_by]
+    }
+
     if (!expenseForm.value.title || expenseForm.value.amount_original === 0) return alert('請填寫項目名稱與金額')
     if (!expenseForm.value.paid_by) return alert('請選擇誰付款')
     
@@ -357,9 +499,9 @@
       exchange_rate: expenseForm.value.exchange_rate,
       category: expenseForm.value.category,
       payment_method: expenseForm.value.payment_method,
-      expense_date: expenseForm.value.expense_date,
+      expense_date: expenseForm.value.expense_date || new Date().toISOString().split('T')[0],
       note: expenseForm.value.note,
-      paid_by: expenseForm.value.paid_by,
+      paid_by: expenseForm.value.paid_by || '',
       split_with: expenseForm.value.split_with
     }
     delete (payload as any).id
@@ -386,8 +528,17 @@
       expenses.value = data || []
   }
 
-  // 計算 TWD 金額
-  const calculateAmountTWD = (expense: any) => Math.round(expense.amount_original * expense.exchange_rate)
+  // 自動獲取匯率
+  async function fetchExchangeRate(currency: string) {
+    try {
+      const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${currency}`)
+      const data = await response.json()
+      return data.rates.TWD
+    } catch (error) {
+      console.error('獲取匯率失敗:', error)
+      return null
+    }
+  }
 
   // 清算計算邏輯
   const settlementCalculation = computed(() => {
@@ -517,6 +668,7 @@
         tripName.value = trip.name
         subtitleRaw.value = trip.subtitle || ''
         startDateRaw.value = trip.start_date
+        tripMembers.value = trip.members || []
         if (trip.start_date && trip.end_date) {
             const f = (s: string) => { const d = new Date(s); return `${d.getMonth()+1}月${d.getDate()}日` }
             tripDates.value = `${f(trip.start_date)} - ${f(trip.end_date)}`
@@ -530,6 +682,26 @@
   }
   
   onMounted(loadData)
+
+  // 監聽貨幣變化，自動更新匯率
+  watch(() => expenseForm.value.currency, async (newCurrency) => {
+    if (newCurrency && showExpenseForm.value) {
+      const rate = await fetchExchangeRate(newCurrency)
+      if (rate) {
+        expenseForm.value.exchange_rate = rate
+      }
+    }
+  })
+
+  // 監聽貨幣變化，自動更新匯率
+  watch(() => expenseForm.value.currency, async (newCurrency) => {
+    if (newCurrency && showExpenseForm.value) {
+      const rate = await fetchExchangeRate(newCurrency)
+      if (rate) {
+        expenseForm.value.exchange_rate = rate
+      }
+    }
+  })
 </script>
   
 <template>
@@ -817,7 +989,25 @@
                 </div>
             </div>
         </div>
+<div v-if="expenses.length > 0" class="bg-white rounded-xl border border-stone-100 shadow-sm p-4 mb-6">
+            <h3 class="font-bold text-[#6F4E37] mb-4 flex items-center gap-2">🍰 支出分佈</h3>
+            
+            <div class="h-48 relative flex justify-center">
+                <Doughnut :data="expenseChartData" :options="chartOptions" />
+            </div>
 
+            <div class="mt-4 pt-3 border-t border-stone-100 text-center">
+                <p class="test-s text-stone-400">花費最多的項目</p>
+                <div v-if="expenseChartData.datasets && expenseChartData.datasets[0] && expenseChartData.datasets[0].data && expenseChartData.datasets[0].data.length > 0">
+                   <p class="font-bold text-[#BC4749] text-lg">
+                       {{ expenseChartData.labels[expenseChartData.datasets[0].data.indexOf(Math.max(...expenseChartData.datasets[0].data))] }}
+                   </p>
+                   <p class="test-s text-stone-500">
+                       NT$ {{ Math.max(...expenseChartData.datasets[0].data).toLocaleString() }}
+                   </p>
+                </div>
+            </div>
+        </div>
         <!-- 記帳列表 -->
         <div v-if="expenses.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300">
             <p class="text-stone-400 mb-2">{{ isEditMode ? '還沒有任何記帳' : '暫無記帳資料' }}</p>
@@ -834,14 +1024,21 @@
                     <span class="text-2xl">{{ expenseCategories.find(c => c.name === expense.category)?.icon || '📍' }}</span>
                     <div class="flex-1">
                         <p class="font-bold text-stone-800">{{ expense.title }}</p>
-                        <p class="test-s text-stone-500">{{ expense.expense_date }} · {{ expense.category }} · {{ expense.payment_method }}</p>
+                        <!-- <p class="test-s text-stone-500">{{ expense.expense_date }} · {{ expense.category }} · {{ expense.payment_method }}</p> -->
+                        <p class="test-s text-stone-500">
+                            {{ expense.expense_date }} · {{ expense.category }} · 
+                            <span class="text-[10px] text-stone-400">({{ expense.payment_method }})</span>
+                        </p>
                         <p v-if="expense.note" class="test-s text-stone-400 mt-1">{{ expense.note }}</p>
+                            <span class="font-bold text-stone-600">
+                                付款人:{{ expense.paid_by }}
+                            </span> 
                         <p v-if="expense.split_with && expense.split_with.length > 0" class="test-s text-stone-400 mt-1">分擔: {{ expense.split_with.join(', ') }}</p>
                     </div>
                 </div>
                 
                 <div class="text-right">
-                    <p class="text-lg font-bold text-[#BC4749]">¥{{ expense.amount_original }}</p>
+                    <p class="text-lg font-bold text-[#BC4749]">{{ getCurrencySymbol(expense.currency) }} {{ expense.amount_original }}</p>
                     <p class="test-s text-stone-400 font-mono">NT${{ calculateAmountTWD(expense) }}</p>
                 </div>
             </div>
@@ -849,15 +1046,14 @@
 
         <!-- 清算結算 -->
         <div v-if="expenses.length > 0 && settlementCalculation.settlement && Object.keys(settlementCalculation.settlement).length > 0" class="mt-8 bg-gradient-to-br from-[#FEF6E4] to-[#F5F5F4] rounded-xl border-2 border-[#D4A373]/50 p-5">
-            <h3 class="font-bold text-[#6F4E37] mb-4 flex items-center gap-2">🧮 清算建議</h3>
+            <h3 class="font-bold text-[#6F4E37] mb-4 flex items-center gap-2">📊 付款統計</h3>
             <div class="space-y-2">
                 <div v-for="(amount, person) in settlementCalculation.settlement" :key="person" class="bg-white rounded-lg p-3 border border-stone-200 flex justify-between items-center">
                     <p class="font-bold text-stone-800">{{ person }}</p>
+                    
                     <div class="text-right">
-                        <p class="test-s text-stone-500">已付 / 應付</p>
-                        <p class="font-bold text-[#283618]">NT${{ amount.paid }} / NT${{ Math.round(amount.should_pay) }}</p>
-                        <p v-if="amount.paid > amount.should_pay" class="text-[12px] text-[#06A77D] font-bold">應收 NT${{ Math.round(amount.paid - amount.should_pay) }}</p>
-                        <p v-else class="text-[12px] text-[#BC4749] font-bold">應付 NT${{ Math.round(amount.should_pay - amount.paid) }}</p>
+                        <p class="test-s text-stone-500">已支付</p>
+                        <p class="font-bold text-[#BC4749] text-lg">NT${{ amount.paid }}</p>
                     </div>
                 </div>
             </div>
@@ -1095,20 +1291,35 @@
                 <!-- 誰付款 -->
                 <div>
                     <label class="test-s text-stone-500 font-bold mb-1 block">誰付的？ *必填</label>
-                    <input v-model="expenseForm.paid_by" placeholder="例如: 小王" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 m focus:outline-none focus:border-[#606C38]" />
+                    <select v-model="expenseForm.paid_by" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 m focus:outline-none focus:border-[#606C38]">
+                        <option v-for="member in tripMembers" :key="member" :value="member">{{ member }}</option>
+                    </select>
                 </div>
 
-                <!-- 分擔人員 -->
-                <div>
-                    <label class="test-s text-stone-500 font-bold mb-1 block">分擔人員 (除了付款人外)</label>
-                    <textarea placeholder="例如: 小李, 小張" @input="(e: any) => expenseForm.split_with = e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s)" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 h-12 resize-none m focus:outline-none focus:border-[#606C38]">{{ expenseForm.split_with.join(', ') }}</textarea>
-                    <p class="test-s text-stone-400 mt-1" v-if="expenseForm.split_with.length > 0">分擔人: {{ expenseForm.split_with.join(', ') }}</p>
+                <div class="mt-2">
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="test-s text-stone-500 font-bold block">分擔的人</label>
+                        <button @click="expenseForm.split_with = [...tripMembers]" class="text-[10px] text-[#606C38] font-bold bg-[#E9EDC9] px-2 py-1 rounded">全選</button>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <label v-for="member in tripMembers" :key="member" 
+                               class="flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none"
+                               :class="expenseForm.split_with.includes(member) ? 'bg-[#FDFCF8] border-[#606C38] shadow-sm' : 'bg-stone-50 border-stone-200 opacity-70'">
+                            <input type="checkbox" :value="member" v-model="expenseForm.split_with" class="w-4 h-4 accent-[#606C38]">
+                            <span class="text-stone-700 font-medium" :class="{'text-[#283618] font-bold': expenseForm.split_with.includes(member)}">{{ member }}</span>
+                        </label>
+                    </div>
+                    <p class="test-s text-stone-400 mt-1 text-right">
+                        {{ expenseForm.split_with.length }} 人分擔 · 每人約 NT$ {{ expenseForm.split_with.length > 0 ? Math.round(calculateAmountTWD(expenseForm) / expenseForm.split_with.length) : 0 }}
+                    </p>
                 </div>
+
 
                 <!-- 備註 -->
                 <div>
                     <label class="test-s text-stone-500 font-bold mb-1 block">備註 (可選)</label>
-                    <textarea v-model="expenseForm.note" placeholder="例如: 兩人份" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 h-12 resize-none m focus:outline-none focus:border-[#606C38]"></textarea>
+                    <textarea v-model="expenseForm.note" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 h-12 resize-none m focus:outline-none focus:border-[#606C38]"></textarea>
                 </div>
 
                 <div class="flex gap-3 mt-6 pt-2 border-t border-stone-100">
@@ -1118,6 +1329,9 @@
             </div>
         </div>
     </div>
+
+    
+
 
     <!-- 交通表單 -->
     <!-- <div v-if="showTransportForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showTransportForm = false">
@@ -1162,6 +1376,7 @@
 
 
   </div>
+  
 </template>
 
 <style scoped>
