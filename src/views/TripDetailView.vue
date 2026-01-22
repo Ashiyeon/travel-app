@@ -1201,7 +1201,7 @@
     <!-- 住宿表單 -->
     <div v-if="showAccForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" @click.self="showAccForm = false">
         <div class="bg-[#FDFCF8] w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-5 sticky top-0 bg-[#FDFCF8] z-10 py-2 border-b border-stone-200"><h3 class="text-lg font-black text-[#283618]">{{ isEditingAcc ? '編輯住宿' : '新增住宿' }}</h3><button @click="showAccForm = false" class="text-stone-400 text-2xl">×</button></div>
+            <div class="flex justify-between items-center mb-5 bg-[#FDFCF8] z-10 py-2 border-b border-stone-200"><h3 class="text-lg font-black text-[#283618]">{{ isEditingAcc ? '編輯住宿' : '新增住宿' }}</h3><button @click="showAccForm = false" class="text-stone-400 text-2xl">×</button></div>
             <div class="space-y-4">
                 <div><label class="test-s text-stone-500">名稱</label><input v-model="accForm.name" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
                 <div class="grid grid-cols-2 gap-3 bg-stone-50 p-3 rounded border border-stone-200">
@@ -1232,7 +1232,7 @@
     <!-- 記帳表單 -->
     <div v-if="showExpenseForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" @click.self="showExpenseForm = false">
         <div class="bg-[#FDFCF8] w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-5 sticky top-0 bg-[#FDFCF8] z-10 py-2 border-b border-stone-200"><h3 class="text-lg font-black text-[#283618]">{{ isEditingExpense ? '編輯記帳' : '新增記帳' }}</h3><button @click="showExpenseForm = false" class="text-stone-400 text-2xl">×</button></div>
+            <div class="flex justify-between items-center mb-5 bg-[#FDFCF8] z-10 py-2 border-b border-stone-200"><h3 class="text-lg font-black text-[#283618]">{{ isEditingExpense ? '編輯記帳' : '新增記帳' }}</h3><button @click="showExpenseForm = false" class="text-stone-400 text-2xl">×</button></div>
             <div class="space-y-4">
                 <!-- 基本信息 -->
                 <div>
@@ -1284,13 +1284,13 @@
 
                 <!-- 消費日期 -->
                 <div>
-                    <label class="test-s text-stone-500 font-bold mb-1 block">消費日期</label>
+                    <label class="test-s text-stone-500 flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">消費日期</label>
                     <input v-model="expenseForm.expense_date" type="date" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 focus:outline-none focus:border-[#606C38]" />
                 </div>
 
                 <!-- 誰付款 -->
                 <div>
-                    <label class="test-s text-stone-500 font-bold mb-1 block">誰付的？ *必填</label>
+                    <label class="test-s text-stone-500 flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">誰付的？ *必填</label>
                     <select v-model="expenseForm.paid_by" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 m focus:outline-none focus:border-[#606C38]">
                         <option v-for="member in tripMembers" :key="member" :value="member">{{ member }}</option>
                     </select>
