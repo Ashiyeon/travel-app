@@ -449,7 +449,7 @@
     function calculateAmountTWD(expense: any) {
     // 防呆機制：如果沒有金額或匯率，回傳 0
     if (!expense || !expense.amount_original || !expense.exchange_rate) return 0
-    // 計算並四雪五入
+    // 計算並四捨五入
     return Math.round(expense.amount_original * expense.exchange_rate)
     }
 
