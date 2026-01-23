@@ -104,7 +104,16 @@
         }
     }
     }
-
+// --- 產生每 30 分鐘的時間選項 ---
+  const timeOptions = computed(() => {
+    const times = []
+    for (let i = 0; i < 24; i++) {
+      const hour = i.toString().padStart(2, '0')
+      times.push(`${hour}:00`)
+      times.push(`${hour}:30`)
+    }
+    return times
+  })
   const route = useRoute()
   const router = useRouter()
   const tripId = route.params.id
@@ -1023,8 +1032,8 @@
                 <div class="flex-1 flex items-center gap-4">
                     <span class="text-2xl">{{ expenseCategories.find(c => c.name === expense.category)?.icon || '📍' }}</span>
                     <div class="flex-1">
-                        <p class="font-bold text-stone-800">{{ expense.title }}</p>
-                        <!-- <p class="test-s text-stone-500">{{ expense.expense_date }} · {{ expense.category }} · {{ expense.payment_method }}</p> -->
+                        <!-- <p class="font-bold text-stone-800">{{ expense.title }}</p> -->
+                        <p class="test-s text-stone-500">{{ expense.expense_date }} · {{ expense.category }} · {{ expense.payment_method }}</p>
                         <p class="test-s text-stone-500">
                             {{ expense.expense_date }} · {{ expense.category }} · 
                             <span class="text-[10px] text-stone-400">({{ expense.payment_method }})</span>
@@ -1130,8 +1139,13 @@
         <div class="bg-[#FDFCF8] w-full max-w-md rounded-2xl p-6 shadow-2xl">
             <div class="flex justify-between mb-4"><h3 class="font-bold text-lg text-[#283618]">{{ isEditingActivity ? '編輯行程' : '新增行程' }}</h3><button @click="showActivityForm=false" class="text-2xl text-stone-400">×</button></div>
             <div class="space-y-3">
-                <input v-model="activityForm.date" type="date" class="w-full border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]" />
-                <div class="flex gap-2">
+            <input 
+                v-model="activityForm.date" 
+                type="date" 
+                class="w-full appearance-none m-0 border border-stone-300 px-3 py-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38] min-h-[42px]" 
+            />                
+
+            <div class="flex gap-2 mt-2">
                     <input v-model="activityForm.start_time" placeholder="時間 (09:00)" class="w-1/3 border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]" />
                     <select v-model="activityForm.category" class="flex-1 border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]"><option>景點</option><option>交通</option><option>餐飲</option><option>活動</option><option>住宿</option></select>
                 </div>
@@ -1157,12 +1171,16 @@
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="test-s text-stone-500 mb-1 block">安排日期 (選填)</label>
-                    <input 
-                            v-model="attractionForm.date" 
+                    <div>
+                        <label class="test-s text-stone-500 mb-1 block">安排日期 (選填)</label>
+                        
+                        <input 
+                            v-model="expenseForm.expense_date" 
                             type="date" 
-                            class="w-full border border-stone-300 p-2 rounded-lg bg-white focus:outline-none focus:border-[#606C38]" 
-                    />
+                            class="w-full appearance-none border border-stone-300 bg-white rounded-lg px-3 py-2 m-0 focus:outline-none focus:border-[#606C38] min-h-[42px]" 
+                        />
+                    </div>
+
                     </div>
                     <div class="flex gap-2">
                     <div class="w-1/3">
@@ -1204,13 +1222,55 @@
             <div class="flex justify-between items-center mb-5 bg-[#FDFCF8] z-10 py-2 border-b border-stone-200"><h3 class="text-lg font-black text-[#283618]">{{ isEditingAcc ? '編輯住宿' : '新增住宿' }}</h3><button @click="showAccForm = false" class="text-stone-400 text-2xl">×</button></div>
             <div class="space-y-4">
                 <div><label class="test-s text-stone-500">名稱</label><input v-model="accForm.name" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
-                <div class="grid grid-cols-2 gap-3 bg-stone-50 p-3 rounded border border-stone-200">
-                    <div class="col-span-2 test-s font-bold text-stone-700">入住設定</div>
-                    <div><label class="text-[10px] text-stone-400">日期</label><input v-model="accForm.check_in_date" type="date" class="w-full bg-white border border-stone-300 rounded px-1 py-1" /></div>
-                    <div><label class="text-[10px] text-stone-400">時間</label><input v-model="accForm.check_in_time" class="w-full bg-white border border-stone-300 rounded px-1 py-1" /></div>
-                    <div class="col-span-2 test-s font-bold text-stone-700 mt-2">退房設定</div>
-                    <div><label class="text-[10px] text-stone-400">日期</label><input v-model="accForm.check_out_date" type="date" class="w-full bg-white border border-stone-300 rounded px-1 py-1" /></div>
-                    <div><label class="text-[10px] text-stone-400">時間</label><input v-model="accForm.check_out_time" class="w-full bg-white border border-stone-300 rounded px-1 py-1" /></div>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-3 bg-stone-50 p-3 rounded-xl border border-stone-200">
+                    
+                    <div class="col-span-2 test-s font-bold text-stone-700 flex items-center gap-1">
+                        <span>📥</span> 入住時間 (Check-in)
+                    </div>
+                    
+                    <div>
+                        <label class="text-[10px] text-stone-400 font-bold mb-0.5 block">日期</label>
+                        <input 
+                            v-model="accForm.check_in_date" 
+                            type="date" 
+                            class="w-full appearance-none m-0 bg-white border border-stone-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#606C38] min-w-0" 
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="text-[10px] text-stone-400 font-bold mb-0.5 block">時間</label>
+                        <div class="relative">
+                            <select v-model="accForm.check_in_time" class="w-full appearance-none bg-white border border-stone-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#606C38]">
+                                <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
+                            </select>
+                            <div class="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none text-[10px]">▼</div>
+                        </div>
+                    </div>
+
+                    <div class="col-span-2 border-t border-stone-200 my-1"></div>
+
+                    <div class="col-span-2 test-s font-bold text-stone-700 flex items-center gap-1">
+                        <span>📤</span> 退房時間 (Check-out)
+                    </div>
+                    
+                    <div>
+                        <label class="text-[10px] text-stone-400 font-bold mb-0.5 block">日期</label>
+                        <input 
+                            v-model="accForm.check_out_date" 
+                            type="date" 
+                            class="w-full appearance-none m-0 bg-white border border-stone-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#606C38] min-w-0" 
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="text-[10px] text-stone-400 font-bold mb-0.5 block">時間</label>
+                        <div class="relative">
+                            <select v-model="accForm.check_out_time" class="w-full appearance-none bg-white border border-stone-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#606C38]">
+                                <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
+                            </select>
+                            <div class="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none text-[10px]">▼</div>
+                        </div>
+                    </div>
                 </div>
                 <div><label class="test-s text-stone-500">地址</label><input v-model="accForm.address" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
                 <div><label class="test-s text-stone-500">最近車站</label><input v-model="accForm.station" placeholder="例如: JR淺草站 (步行5分)" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
@@ -1284,8 +1344,13 @@
 
                 <!-- 消費日期 -->
                 <div>
-                    <label class="test-s text-stone-500 flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">消費日期</label>
-                    <input v-model="expenseForm.expense_date" type="date" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 focus:outline-none focus:border-[#606C38]" />
+                    <label class="test-s text-stone-500 font-bold mb-1 block">消費日期</label>
+                    
+                    <input 
+                        v-model="expenseForm.expense_date" 
+                        type="date" 
+                        class="w-full appearance-none border border-stone-300 bg-white rounded-lg px-3 py-2 m-0 focus:outline-none focus:border-[#606C38] min-h-[42px]" 
+                    />
                 </div>
 
                 <!-- 誰付款 -->
