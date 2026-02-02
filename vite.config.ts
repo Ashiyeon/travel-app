@@ -13,7 +13,7 @@ export default defineConfig({
       manifest: {
         name: 'travel-app',
         //更改app名稱
-        short_name: 'Travel',
+        short_name: '空姐叫我',
         display: 'standalone',
         start_url: '/travel-app/',
         scope: '/travel-app/',
