@@ -10,7 +10,25 @@
     // 註冊元件
     ChartJS.register(ArcElement, Tooltip, Legend)
 
-    // --- 計算圖表資料 ---
+        // --- 型別定義 ---
+        interface Expense {
+            id?: number
+            trip_id?: string | number
+            title: string
+            amount_original: number
+            currency: string
+            exchange_rate: number
+            category: string
+            payment_method: string
+            expense_date?: string
+            note: string
+            paid_by: string
+            split_with: string[]
+        }
+
+        interface ExpenseForm extends Omit<Expense, 'id' | 'trip_id'> {}
+
+        // --- 計算圖表資料 ---
     const expenseChartData = computed(() => {
     // 1. 初始化分類金額
     const categoryMap: Record<string, number> = {}
@@ -18,7 +36,7 @@
     expenseCategories.forEach(c => categoryMap[c.name] = 0)
 
     // 2. 遍歷支出，換算成 TWD 並歸類
-    expenses.value.forEach((e: any) => {
+    expenses.value.forEach((e: Expense) => {
         // 這裡直接呼叫 calculateAmountTWD
         const amount = calculateAmountTWD(e)
         const category = e.category || '其他'
@@ -398,8 +416,8 @@
 
 
 
-  //  PART 4: 記帳 (Expenses)
-  const expenses = ref<any[]>([])
+    //  PART 4: 記帳 (Expenses)
+    const expenses = ref<Expense[]>([])
   const showExpenseForm = ref(false)
   const isEditingExpense = ref(false)
   const editingExpenseId = ref<number | null>(null)
@@ -419,8 +437,8 @@
   // 支付方式
   const paymentMethods = ['現金', '信用卡', 'IC卡']
 
-  // 空白記帳表單
-  const expenseForm = ref({
+    // 空白記帳表單
+    const expenseForm = ref<ExpenseForm>({
     title: '',
     amount_original: 0,
     currency: 'JPY',
@@ -429,8 +447,8 @@
     payment_method: '現金',
     expense_date: new Date().toISOString().split('T')[0],
     note: '',
-    paid_by: '', // 誰付的
-    split_with: [] as string[] // 分擔的人
+        paid_by: '', // 誰付的
+        split_with: [] as string[] // 分擔的人
   })
 
 
@@ -446,35 +464,42 @@
         }
     }
 
-    function calculateAmountTWD(expense: any) {
+    function calculateAmountTWD(expense: Partial<Expense> | any) {
     // 防呆機制：如果沒有金額或匯率，回傳 0
     if (!expense || !expense.amount_original || !expense.exchange_rate) return 0
     // 計算並四捨五入
     return Math.round(expense.amount_original * expense.exchange_rate)
     }
 
-    function openExpenseForm(expense?: any) {
+        function openExpenseForm(expense?: Partial<Expense>) {
     if (expense) {
-      isEditingExpense.value = true
-      editingExpenseId.value = expense.id
+    isEditingExpense.value = true
+    editingExpenseId.value = expense.id ?? null
       
-      expenseForm.value = { 
-        ...expense,
-        paid_by: expense.paid_by ?? '', 
-        split_with: expense.split_with || [] 
-      }
+            expenseForm.value = {
+                title: expense.title || '',
+                amount_original: expense.amount_original || 0,
+                currency: expense.currency || 'JPY',
+                exchange_rate: expense.exchange_rate || 0.215,
+                category: expense.category || '餐飲',
+                payment_method: expense.payment_method || '現金',
+                expense_date: expense.expense_date || selectedDate.value || new Date().toISOString().split('T')[0],
+                note: expense.note || '',
+                paid_by: expense.paid_by ?? (tripMembers.value[0] || ''),
+                split_with: expense.split_with || []
+            }
 
     } else {
       isEditingExpense.value = false
       editingExpenseId.value = null
-      expenseForm.value = {
+            expenseForm.value = {
         title: '',
         amount_original: 0,
         currency: 'JPY',
         exchange_rate: 0.215,
         category: '餐飲',
         payment_method: '現金',
-        expense_date: selectedDate.value || new Date().toISOString().split('T')[0],
+                expense_date: (selectedDate.value && selectedDate.value !== '') ? selectedDate.value : new Date().toISOString().split('T')[0],
         note: '',
         paid_by: tripMembers.value[0] || '',
         split_with: [...tripMembers.value]     }
@@ -553,27 +578,30 @@
   const settlementCalculation = computed(() => {
     const settlement: any = {}
     
-    expenses.value.forEach(expense => {
-      const amountTWD = calculateAmountTWD(expense)
-      
-      // 初始化付款人
-      if (!settlement[expense.paid_by]) {
-        settlement[expense.paid_by] = { paid: 0, should_pay: 0 }
-      }
-      settlement[expense.paid_by].paid += amountTWD
-      
-      // 分擔的人 (包括付款人)
-      const splits = [...(expense.split_with || []), expense.paid_by]
-      const uniqueSplits = [...new Set(splits)]
-      const perPerson = amountTWD / uniqueSplits.length
-      
-      uniqueSplits.forEach(person => {
-        if (!settlement[person]) {
-          settlement[person] = { paid: 0, should_pay: 0 }
-        }
-        settlement[person].should_pay += perPerson
-      })
-    })
+        expenses.value.forEach(expense => {
+            const amountTWD = calculateAmountTWD(expense)
+
+            // 使用防呆的付款人字串
+            const payer = expense.paid_by || '未指定'
+
+            // 初始化付款人
+            if (!settlement[payer]) {
+                settlement[payer] = { paid: 0, should_pay: 0 }
+            }
+            settlement[payer].paid += amountTWD
+
+            // 分擔的人 (包括付款人)
+            const splits = [...(expense.split_with || []), payer]
+            const uniqueSplits = [...new Set(splits)]
+            const perPerson = amountTWD / uniqueSplits.length
+
+            uniqueSplits.forEach(person => {
+                if (!settlement[person]) {
+                    settlement[person] = { paid: 0, should_pay: 0 }
+                }
+                settlement[person].should_pay += perPerson
+            })
+        })
 
     // 計算誰應該付給誰
     const transactions: any[] = []
@@ -690,27 +718,17 @@
     // loadTransportData()
   }
   
-  onMounted(loadData)
+    onMounted(loadData)
 
-  // 監聽貨幣變化，自動更新匯率
-  watch(() => expenseForm.value.currency, async (newCurrency) => {
-    if (newCurrency && showExpenseForm.value) {
-      const rate = await fetchExchangeRate(newCurrency)
-      if (rate) {
-        expenseForm.value.exchange_rate = rate
-      }
-    }
-  })
-
-  // 監聽貨幣變化，自動更新匯率
-  watch(() => expenseForm.value.currency, async (newCurrency) => {
-    if (newCurrency && showExpenseForm.value) {
-      const rate = await fetchExchangeRate(newCurrency)
-      if (rate) {
-        expenseForm.value.exchange_rate = rate
-      }
-    }
-  })
+    // 監聽貨幣變化，自動更新匯率（單一 watcher）
+    watch(() => expenseForm.value.currency, async (newCurrency) => {
+        if (newCurrency && showExpenseForm.value) {
+            const rate = await fetchExchangeRate(newCurrency)
+            if (rate) {
+                expenseForm.value.exchange_rate = rate
+            }
+        }
+    })
 </script>
   
 <template>
