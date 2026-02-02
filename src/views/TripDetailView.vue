@@ -248,7 +248,7 @@
 
 
   
-  //  PART 2: 景點 (Attractions) - 邏輯保持不變
+  //  PART 2: 景點 (Attractions)
   const attractions = ref<any[]>([])
   const showAttractionForm = ref(false)
   const isEditingAttraction = ref(false)
@@ -804,7 +804,7 @@
                             <h3 class="font-bold text-[#283618]">{{ act.title }}</h3>
                         </div>
 
-                        <p class="text-stone-500 m mt-1 line-clamp-2">{{ act.description }}</p>
+                        <p class="text-stone-500 m mt-1 line-clamp-2 break-all">{{ act.description }}</p>
 
                         <a v-if="act.map_url" 
                         :href="act.map_url" 
@@ -1171,7 +1171,11 @@
                 
                 <input v-model="activityForm.map_url" placeholder="📍 Google Map 連結" class="w-full border border-stone-300 p-2 rounded-xl bg-white m text-[#606C38] focus:outline-none focus:border-[#606C38]" />
 
-                <textarea v-model="activityForm.description" placeholder="備註" class="w-full border border-stone-300 p-2 rounded-xl bg-white h-20 focus:outline-none focus:border-[#606C38]"></textarea>
+                <textarea 
+                    v-model="activityForm.description" 
+                    placeholder="備註" 
+                    class="w-full border border-stone-300 p-2 rounded-xl bg-white h-24 focus:outline-none focus:border-[#606C38] resize-none break-all"
+                ></textarea>
                 <div class="flex gap-2 mt-2">
                     <button v-if="isEditingActivity" @click="handleDeleteActivity" class="bg-red-50 text-[#BC4749] flex-1 py-2 rounded-xl">刪除</button>
                     <button @click="handleSaveActivity" class="bg-[#283618] text-white flex-1 py-2 rounded-xl hover:bg-[#3A5A40]">確認</button>
