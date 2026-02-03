@@ -465,53 +465,61 @@
     }
 
     function calculateAmountTWD(expense: Partial<Expense> | any) {
-    // 防呆機制：如果沒有金額或匯率，回傳 0
-    if (!expense || !expense.amount_original || !expense.exchange_rate) return 0
-    // 計算並四捨五入
-    return Math.round(expense.amount_original * expense.exchange_rate)
-    }
+        // 防呆機制：如果沒有金額或匯率，回傳 0
+        if (!expense || !expense.amount_original || !expense.exchange_rate) return 0
+        // 計算並四捨五入
+        return Math.round(expense.amount_original * expense.exchange_rate)
+        }
 
         function openExpenseForm(expense?: Partial<Expense>) {
-    if (expense) {
-    isEditingExpense.value = true
-    editingExpenseId.value = expense.id ?? null
-      
-            expenseForm.value = {
-                title: expense.title || '',
-                amount_original: expense.amount_original || 0,
-                currency: expense.currency || 'JPY',
-                exchange_rate: expense.exchange_rate || 0.215,
-                category: expense.category || '餐飲',
-                payment_method: expense.payment_method || '現金',
-                expense_date: expense.expense_date || selectedDate.value || new Date().toISOString().split('T')[0],
-                note: expense.note || '',
-                paid_by: expense.paid_by ?? (tripMembers.value[0] || ''),
-                split_with: expense.split_with || []
-            }
+            if (expense && expense.id) {
+        isEditingExpense.value = true
+        editingExpenseId.value = expense.id
+
+        expenseForm.value = {
+        title: expense.title || '',
+        amount_original: expense.amount_original || 0,
+        currency: expense.currency || 'JPY',
+        exchange_rate: expense.exchange_rate || 0.215,
+        category: expense.category || '餐飲',
+        payment_method: expense.payment_method || '現金',
+        expense_date: expense.expense_date || selectedDate.value || new Date().toISOString().split('T')[0],
+        note: expense.note || '',
+        paid_by: expense.paid_by ?? (tripMembers.value[0] || ''),
+        split_with: expense.split_with || []
+        }
 
     } else {
-      isEditingExpense.value = false
-      editingExpenseId.value = null
-            expenseForm.value = {
+        // 新增模式
+        isEditingExpense.value = false
+        editingExpenseId.value = null
+        
+        // --- 關鍵修改在這裡 ---
+        // 如果傳入的參數裡有 category (例如從快捷按鈕來的)，就使用該分類，否則預設為 '餐飲'
+        const defaultCategory = expense?.category || '餐飲'
+
+        expenseForm.value = {
         title: '',
         amount_original: 0,
         currency: 'JPY',
         exchange_rate: 0.215,
-        category: '餐飲',
+        category: defaultCategory, // 使用這裡判斷好的分類
         payment_method: '現金',
-                expense_date: (selectedDate.value && selectedDate.value !== '') ? selectedDate.value : new Date().toISOString().split('T')[0],
+        expense_date: (selectedDate.value && selectedDate.value !== '') ? selectedDate.value : new Date().toISOString().split('T')[0],
         note: '',
         paid_by: tripMembers.value[0] || '',
-        split_with: [...tripMembers.value]     }
-      // 自動獲取匯率
-      fetchExchangeRate('JPY').then(rate => {
-        if (rate) {
-          expenseForm.value.exchange_rate = rate
+        split_with: [...tripMembers.value]
         }
-      })
+        
+        // 自動獲取匯率
+        fetchExchangeRate('JPY').then(rate => {
+        if (rate) {
+            expenseForm.value.exchange_rate = rate
+        }
+        })
     }
     showExpenseForm.value = true
-  }
+    }
 
 
   async function handleSaveExpense() {
@@ -992,7 +1000,10 @@
         <div v-if="isEditMode" class="bg-white rounded-xl shadow-sm border border-stone-100 p-4 mb-6">
             <p class="test-s text-stone-600 font-bold mb-3">快速記帳</p>
             <div class="grid grid-cols-4 gap-2">
-                <button v-for="cat in expenseCategories" :key="cat.name" @click="expenseForm.category = cat.name; openExpenseForm()" class="p-3 rounded-lg bg-stone-50 hover:bg-[#E9EDC9] border border-stone-200 hover:border-[#606C38] transition-all flex flex-col items-center gap-1 group">
+                <button v-for="cat in expenseCategories" :key="cat.name" 
+                    @click="openExpenseForm({ category: cat.name })" 
+                    class="p-3 rounded-lg bg-stone-50 hover:bg-[#E9EDC9] border border-stone-200 hover:border-[#606C38] transition-all flex flex-col items-center gap-1 group">
+                    
                     <span class="text-2xl group-hover:scale-110 transition">{{ cat.icon }}</span>
                     <span class="text-[10px] font-bold text-stone-700">{{ cat.name }}</span>
                 </button>
