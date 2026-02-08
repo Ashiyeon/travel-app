@@ -490,11 +490,9 @@
         }
 
     } else {
-        // 新增模式
         isEditingExpense.value = false
         editingExpenseId.value = null
         
-        // --- 關鍵修改在這裡 ---
         // 如果傳入的參數裡有 category (例如從快捷按鈕來的)，就使用該分類，否則預設為 '餐飲'
         const defaultCategory = expense?.category || '餐飲'
 
@@ -701,7 +699,7 @@
   //  全部載入
   // ==========================================
   async function loadData() {
-    // 檢查是否有管理員權限 (關鍵邏輯：只讀取，不切換)
+    // 檢查是否有管理員權限 
     if (localStorage.getItem('trip_admin_access') === 'true') {
         isEditMode.value = true
     } else {
