@@ -1059,12 +1059,12 @@
                 <div class="flex-1 flex items-center gap-4">
                     <span class="text-2xl">{{ expenseCategories.find(c => c.name === expense.category)?.icon || '📍' }}</span>
                     <div class="flex-1">
-                        <!-- <p class="font-bold text-stone-800">{{ expense.title }}</p> -->
+                        <p class="font-bold text-stone-800">{{ expense.title }}</p>
                         <p class="test-s text-stone-500">{{ expense.expense_date }} · {{ expense.category }} · {{ expense.payment_method }}</p>
-                        <p class="test-s text-stone-500">
+                        <!-- <p class="test-s text-stone-500">
                             {{ expense.expense_date }} · {{ expense.category }} · 
                             <span class="text-[10px] text-stone-400">({{ expense.payment_method }})</span>
-                        </p>
+                        </p> -->
                         <p v-if="expense.note" class="test-s text-stone-400 mt-1">{{ expense.note }}</p>
                             <span class="font-bold text-stone-600">
                                 付款人:{{ expense.paid_by }}
