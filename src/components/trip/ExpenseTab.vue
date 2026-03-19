@@ -23,6 +23,8 @@ interface Expense {
     note: string
     paid_by: string
     split_with: string[]
+    split_rule?: string
+    split_details?: Record<string, number>
 }
 
 interface ExpenseForm extends Omit<Expense, 'id' | 'trip_id'> {}
@@ -66,7 +68,9 @@ const expenseForm = ref<ExpenseForm>({
   expense_date: new Date().toISOString().split('T')[0],
   note: '',
   paid_by: '', // 誰付的
-  split_with: [] as string[] // 分擔的人
+  split_with: [] as string[], // 分擔的人
+  split_rule: 'EQUAL',
+  split_details: {}
 })
 
 // 幣值符號
@@ -113,7 +117,9 @@ async function openExpenseForm(expense?: Partial<Expense>) {
             expense_date: expense.expense_date || props.selectedDate || new Date().toISOString().split('T')[0],
             note: expense.note || '',
             paid_by: expense.paid_by ?? (props.tripMembers[0] || ''),
-            split_with: expense.split_with || []
+            split_with: expense.split_with || [],
+            split_rule: expense.split_rule || 'EQUAL',
+            split_details: expense.split_details || {}
         }
     } else {
         isEditingExpense.value = false
@@ -131,7 +137,9 @@ async function openExpenseForm(expense?: Partial<Expense>) {
             expense_date: (props.selectedDate && props.selectedDate !== '') ? props.selectedDate : new Date().toISOString().split('T')[0],
             note: '',
             paid_by: props.tripMembers[0] || '',
-            split_with: [...props.tripMembers]
+            split_with: [...props.tripMembers],
+            split_rule: 'EQUAL',
+            split_details: {}
         }
         
         const rate = await fetchExchangeRate('JPY')
@@ -148,6 +156,18 @@ async function handleSaveExpense() {
   if (!expenseForm.value.title || expenseForm.value.amount_original === 0) return alert('請填寫項目名稱與金額')
   if (!expenseForm.value.paid_by) return alert('請選擇誰付款')
   
+  if (expenseForm.value.split_rule === 'EXACT') {
+      const totalExact = expenseForm.value.split_with.reduce((sum, p) => sum + (expenseForm.value.split_details?.[p] || 0), 0)
+      if (totalExact !== expenseForm.value.amount_original) {
+          return alert(`具體金額加總 (${totalExact}) 不等於原始金額 (${expenseForm.value.amount_original})`)
+      }
+  } else if (expenseForm.value.split_rule === 'PERCENT') {
+      const totalPercent = expenseForm.value.split_with.reduce((sum, p) => sum + (expenseForm.value.split_details?.[p] || 0), 0)
+      if (totalPercent !== 100) {
+          return alert(`百分比加總 (${totalPercent}%) 不等於 100%`)
+      }
+  }
+
   const payload = {
     trip_id: props.tripId,
     title: expenseForm.value.title,
@@ -159,7 +179,9 @@ async function handleSaveExpense() {
     expense_date: expenseForm.value.expense_date || new Date().toISOString().split('T')[0],
     note: expenseForm.value.note,
     paid_by: expenseForm.value.paid_by || '',
-    split_with: expenseForm.value.split_with
+    split_with: expenseForm.value.split_with,
+    split_rule: expenseForm.value.split_rule,
+    split_details: expenseForm.value.split_details
   }
 
   let error = null
@@ -271,12 +293,31 @@ const settlementCalculation = computed(() => {
 
         const splits = [...(expense.split_with || []), payer]
         const uniqueSplits = [...new Set(splits)]
-        const perPerson = amountTWD / uniqueSplits.length
+        
+        const rule = expense.split_rule || 'EQUAL'
+        const details = expense.split_details || {}
 
-        uniqueSplits.forEach(person => {
-            if (!settlement[person]) settlement[person] = { paid: 0, should_pay: 0 }
-            settlement[person].should_pay += perPerson
-        })
+        if (rule === 'EQUAL') {
+            const perPerson = amountTWD / uniqueSplits.length
+            uniqueSplits.forEach(person => {
+                if (!settlement[person]) settlement[person] = { paid: 0, should_pay: 0 }
+                settlement[person].should_pay += perPerson
+            })
+        } else if (rule === 'EXACT') {
+            uniqueSplits.forEach(person => {
+                if (!settlement[person]) settlement[person] = { paid: 0, should_pay: 0 }
+                const exactOrig = details[person] || 0
+                const exactTWD = expense.amount_original ? (exactOrig / expense.amount_original) * amountTWD : 0
+                settlement[person].should_pay += exactTWD
+            })
+        } else if (rule === 'PERCENT') {
+            uniqueSplits.forEach(person => {
+                if (!settlement[person]) settlement[person] = { paid: 0, should_pay: 0 }
+                const percent = details[person] || 0
+                const percentTWD = amountTWD * (percent / 100)
+                settlement[person].should_pay += percentTWD
+            })
+        }
     })
     return { settlement }
 })
@@ -448,13 +489,36 @@ defineExpose({ loadData: loadExpensesData })
                         <label class="text-xs text-stone-500 font-bold block">分擔的人</label>
                         <button @click="expenseForm.split_with = [...props.tripMembers]" class="text-[10px] text-[#606C38] font-bold bg-[#E9EDC9] px-2 py-1 rounded">全選</button>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <label v-for="member in props.tripMembers" :key="member" 
-                               class="flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none"
+                    
+                    <div class="flex gap-2 mb-3 bg-stone-100 p-1 rounded-lg">
+                        <button @click="expenseForm.split_rule = 'EQUAL'" class="flex-1 py-1 text-xs font-bold rounded-md transition-all" :class="expenseForm.split_rule === 'EQUAL' ? 'bg-white shadow text-[#283618]' : 'text-stone-500'">🟰 平分</button>
+                        <button @click="expenseForm.split_rule = 'EXACT'" class="flex-1 py-1 text-xs font-bold rounded-md transition-all" :class="expenseForm.split_rule === 'EXACT' ? 'bg-white shadow text-[#283618]' : 'text-stone-500'">💰 具體金額</button>
+                        <button @click="expenseForm.split_rule = 'PERCENT'" class="flex-1 py-1 text-xs font-bold rounded-md transition-all" :class="expenseForm.split_rule === 'PERCENT' ? 'bg-white shadow text-[#283618]' : 'text-stone-500'">📊 百分比</button>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div v-for="member in props.tripMembers" :key="member" 
+                               class="flex items-center justify-between p-2 rounded-lg border transition-all"
                                :class="expenseForm.split_with.includes(member) ? 'bg-[#FDFCF8] border-[#606C38] shadow-sm' : 'bg-stone-50 border-stone-200 opacity-70'">
-                            <input type="checkbox" :value="member" v-model="expenseForm.split_with" class="w-4 h-4 accent-[#606C38]">
-                            <span class="text-stone-700 font-medium text-xs" :class="{'text-[#283618] font-bold': expenseForm.split_with.includes(member)}">{{ member }}</span>
-                        </label>
+                            <label class="flex items-center gap-2 cursor-pointer select-none flex-1">
+                                <input type="checkbox" :value="member" v-model="expenseForm.split_with" class="w-4 h-4 accent-[#606C38]">
+                                <span class="text-stone-700 font-medium text-xs" :class="{'text-[#283618] font-bold': expenseForm.split_with.includes(member)}">{{ member }}</span>
+                            </label>
+                            
+                            <div v-if="expenseForm.split_with.includes(member) && expenseForm.split_rule !== 'EQUAL'" class="w-24">
+                                <div class="relative flex items-center">
+                                    <input type="number" v-model.number="expenseForm.split_details[member]" placeholder="0" class="w-full text-right text-xs border border-stone-300 rounded px-2 py-1 pr-6 focus:outline-none focus:border-[#606C38]">
+                                    <span class="absolute right-2 text-[10px] text-stone-400 font-bold">{{ expenseForm.split_rule === 'PERCENT' ? '%' : expenseForm.currency }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div v-if="expenseForm.split_rule === 'EXACT'" class="mt-2 text-xs text-right font-bold" :class="expenseForm.split_with.reduce((sum, p) => sum + (expenseForm.split_details[p] || 0), 0) === expenseForm.amount_original ? 'text-green-600' : 'text-red-500'">
+                        目前加總: {{ expenseForm.split_with.reduce((sum, p) => sum + (expenseForm.split_details[p] || 0), 0) }} / {{ expenseForm.amount_original }}
+                    </div>
+                    <div v-if="expenseForm.split_rule === 'PERCENT'" class="mt-2 text-xs text-right font-bold" :class="expenseForm.split_with.reduce((sum, p) => sum + (expenseForm.split_details[p] || 0), 0) === 100 ? 'text-green-600' : 'text-red-500'">
+                        目前加總: {{ expenseForm.split_with.reduce((sum, p) => sum + (expenseForm.split_details[p] || 0), 0) }}% / 100%
                     </div>
                 </div>
                 <div>
