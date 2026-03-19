@@ -286,7 +286,7 @@ const chartOptions = {
 }
 
 const settlementCalculation = computed(() => {
-    const settlement: any = {}
+    const settlement: Record<string, { paid: number, should_pay: number }> = {}
     expenses.value.forEach(expense => {
         const amountTWD = calculateAmountTWD(expense)
         const payer = expense.paid_by || '未指定'
@@ -321,7 +321,53 @@ const settlementCalculation = computed(() => {
             })
         }
     })
-    return { settlement }
+
+    // 計算淨額
+    const balances: { name: string, balance: number }[] = []
+    Object.entries(settlement).forEach(([person, amounts]) => {
+        const balance = Math.round(amounts.paid - amounts.should_pay)
+        if (balance !== 0) {
+            balances.push({ name: person, balance })
+        }
+    })
+
+    // 分離債權人與債務人
+    const debtors = balances.filter(b => b.balance < 0).map(b => ({ ...b, balance: Math.abs(b.balance) }))
+    const creditors = balances.filter(b => b.balance > 0)
+
+    // 由大到小排序，盡量減少交易次數
+    debtors.sort((a, b) => b.balance - a.balance)
+    creditors.sort((a, b) => b.balance - a.balance)
+
+    const transactions: { from: string, to: string, amount: number }[] = []
+    
+    let i = 0 // debtors index
+    let j = 0 // creditors index
+
+    while (i < debtors.length && j < creditors.length) {
+        const debtor = debtors[i]
+        const creditor = creditors[j]
+        
+        if (!debtor || !creditor) break;
+
+        const amount = Math.min(debtor.balance, creditor.balance)
+        
+        if (amount > 0) {
+             transactions.push({
+                 from: debtor.name,
+                 to: creditor.name,
+                 amount: amount
+             })
+        }
+
+        debtor.balance -= amount
+        creditor.balance -= amount
+
+        if (debtor.balance === 0) i++
+        if (creditor.balance === 0) j++
+    }
+
+    return { settlement, transactions }
 })
 
 watch(() => expenseForm.value.currency, async (newCurrency) => {
@@ -421,16 +467,43 @@ defineExpose({ loadData: loadExpensesData })
     </div>
 
     <!-- 清算結算 -->
-    <div v-if="expenses.length > 0 && settlementCalculation.settlement && Object.keys(settlementCalculation.settlement).length > 0" class="mt-8 bg-gradient-to-br from-[#FEF6E4] to-[#F5F5F4] rounded-xl border-2 border-[#D4A373]/50 p-5">
-        <h3 class="font-bold text-[#6F4E37] mb-4 flex items-center gap-2">📊 付款統計</h3>
-        <div class="space-y-2">
-            <div v-for="(amount, person) in settlementCalculation.settlement" :key="person" class="bg-white rounded-lg p-3 border border-stone-200 flex justify-between items-center">
-                <p class="font-bold text-stone-800">{{ person }}</p>
-                <div class="text-right">
-                    <p class="text-xs text-stone-500">已支付</p>
-                    <p class="font-bold text-[#BC4749] text-lg">NT${{ amount.paid }}</p>
+    <div v-if="expenses.length > 0 && settlementCalculation.settlement && Object.keys(settlementCalculation.settlement).length > 0" class="mt-8 space-y-4">
+        <!-- 付款統計 -->
+        <div class="bg-gradient-to-br from-[#FEF6E4] to-[#F5F5F4] rounded-xl border border-[#D4A373]/30 p-5">
+            <h3 class="font-bold text-[#6F4E37] mb-4 flex items-center gap-2">📊 付款統計</h3>
+            <div class="space-y-2">
+                <div v-for="(amount, person) in settlementCalculation.settlement" :key="person" class="bg-white rounded-lg p-3 border border-stone-100 flex justify-between items-center shadow-sm">
+                    <p class="font-bold text-stone-800">{{ person }}</p>
+                    <div class="text-right">
+                        <p class="text-[10px] text-stone-400 mb-0.5">已付 NT${{ Math.round(amount.paid) }} / 應付 NT${{ Math.round(amount.should_pay) }}</p>
+                        <p class="font-bold text-lg" :class="(amount.paid - amount.should_pay) > 0 ? 'text-green-600' : ((amount.paid - amount.should_pay) < 0 ? 'text-red-500' : 'text-stone-400')">
+                            {{ (amount.paid - amount.should_pay) > 0 ? '+' : '' }}{{ Math.round(amount.paid - amount.should_pay) }}
+                        </p>
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- 誰欠誰錢 (結算指示) -->
+        <div v-if="settlementCalculation.transactions && settlementCalculation.transactions.length > 0" class="bg-white rounded-xl border border-stone-200 shadow-sm p-5">
+            <h3 class="font-bold text-[#283618] mb-4 flex items-center gap-2">💸 結算清單</h3>
+            <div class="space-y-3">
+                <div v-for="(tx, index) in settlementCalculation.transactions" :key="index" class="flex items-center justify-between p-3 bg-stone-50 rounded-lg border border-stone-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-sm">{{ tx.from.charAt(0) }}</div>
+                        <span class="text-stone-400 text-xs">➡️</span>
+                        <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-sm">{{ tx.to.charAt(0) }}</div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-stone-500"><span class="font-bold text-stone-700">{{ tx.from }}</span> 給 <span class="font-bold text-stone-700">{{ tx.to }}</span></p>
+                        <p class="font-black text-[#BC4749]">NT$ {{ tx.amount.toLocaleString() }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div v-else-if="expenses.length > 0" class="bg-green-50 text-green-700 rounded-xl border border-green-200 p-4 text-center font-bold text-sm flex items-center justify-center gap-2">
+            <span>🎉</span> 大家都互不相欠，帳目已結清！
         </div>
     </div>
 
