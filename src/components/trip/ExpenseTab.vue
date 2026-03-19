@@ -490,12 +490,11 @@ defineExpose({ loadData: loadExpensesData })
             <div class="space-y-3">
                 <div v-for="(tx, index) in settlementCalculation.transactions" :key="index" class="flex items-center justify-between p-3 bg-stone-50 rounded-lg border border-stone-100">
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-sm">{{ tx.from.charAt(0) }}</div>
-                        <span class="text-stone-400 text-xs">➡️</span>
-                        <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-sm">{{ tx.to.charAt(0) }}</div>
+                        <div class="px-3 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-sm truncate max-w-[100px]">{{ tx.from }}</div>
+                        <span class="text-stone-400 text-xs shrink-0">應付</span>
+                        <div class="px-3 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-sm truncate max-w-[100px]">{{ tx.to }}</div>
                     </div>
-                    <div class="text-right">
-                        <p class="text-xs text-stone-500"><span class="font-bold text-stone-700">{{ tx.from }}</span> 給 <span class="font-bold text-stone-700">{{ tx.to }}</span></p>
+                    <div class="text-right shrink-0">
                         <p class="font-black text-[#BC4749]">NT$ {{ tx.amount.toLocaleString() }}</p>
                     </div>
                 </div>
