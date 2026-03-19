@@ -27,7 +27,9 @@ interface Expense {
     split_details?: Record<string, number>
 }
 
-interface ExpenseForm extends Omit<Expense, 'id' | 'trip_id'> {}
+interface ExpenseForm extends Omit<Expense, 'id' | 'trip_id'> {
+    split_details: Record<string, number>
+}
 
 const props = defineProps<{
   tripId: string | string[]
