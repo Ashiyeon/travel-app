@@ -42,7 +42,10 @@ onMounted(() => {
 
 async function login() {
   await supabase.auth.signInWithOAuth({
-    provider: 'google'
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + import.meta.env.BASE_URL
+    }
   })
 }
 
