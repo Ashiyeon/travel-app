@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.89.0",
+    "@supabase/supabase-js": "^2.100.0",
     "@tailwindcss/vite": "^4.1.18",
     "chart.js": "^4.5.1",
     "tailwindcss": "^4.1.18",

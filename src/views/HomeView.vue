@@ -8,36 +8,47 @@ const trips = ref<any[]>([])
 const newTripName = ref('') // 首頁輸入框暫存用
 const isLoading = ref(true)
 const isEditMode = ref(false)
-
-// 切換模式的功能
-function toggleEditMode() {
-  if (!isEditMode.value) {
-    const password = prompt('請輸入管理員密碼以開啟編輯功能：')
-    if (password === '2077') {
-      isEditMode.value = true
-      localStorage.setItem('trip_admin_access', 'true')
-    } else if (password !== null) {
-      alert('密碼錯誤')
-    }
-  } else {
-    isEditMode.value = false
-    localStorage.removeItem('trip_admin_access')
-  }
-}
+const user = ref<any>(null)
 
 // Supabase 離線處理變數
 const isOffline = ref(!navigator.onLine)
 
 onMounted(() => {
-// 檢查是否有管理員權限
-  if (localStorage.getItem('trip_admin_access') === 'true') {
-    isEditMode.value = true
-  }
-  
   window.addEventListener('online', () => isOffline.value = false)
   window.addEventListener('offline', () => isOffline.value = true)
-  fetchTrips()
+
+  // 檢查登入狀態
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    user.value = session?.user || null
+    isEditMode.value = !!user.value
+    if (user.value) {
+      fetchTrips()
+    } else {
+      isLoading.value = false
+    }
+  })
+
+  // 監聽登入狀態改變
+  supabase.auth.onAuthStateChange((_event, session) => {
+    user.value = session?.user || null
+    isEditMode.value = !!user.value
+    if (user.value) {
+      fetchTrips()
+    } else {
+      trips.value = []
+    }
+  })
 })
+
+async function login() {
+  await supabase.auth.signInWithOAuth({
+    provider: 'google'
+  })
+}
+
+async function logout() {
+  await supabase.auth.signOut()
+}
 
 // --- 新增行程 Modal 相關變數 ---
 const showCreateModal = ref(false)
@@ -85,7 +96,6 @@ function displayTripDates(trip: any) {
 
 // 步驟 1: 打開新增視窗
 function openCreateModal() {
-  // 如果首頁輸入框有字，自動帶入 Modal 的名稱欄位
   createForm.value = {
     name: newTripName.value, 
     subtitle: '',
@@ -98,12 +108,14 @@ function openCreateModal() {
 // 步驟 2: 送出建立請求
 async function handleCreateTrip() {
   if (!createForm.value.name.trim()) return alert('請填寫行程名稱')
+  if (!user.value) return alert('請先登入')
 
   const payload = {
     name: createForm.value.name,
     subtitle: createForm.value.subtitle,
     start_date: createForm.value.start_date || null,
-    end_date: createForm.value.end_date || null
+    end_date: createForm.value.end_date || null,
+    user_id: user.value.id // 明確指定擁有者
   }
 
   const { data, error } = await supabase.from('trips').insert([payload]).select().single()
@@ -111,7 +123,6 @@ async function handleCreateTrip() {
   if (!error && data) {
     showCreateModal.value = false
     newTripName.value = '' // 清空首頁輸入框
-    // 直接跳轉到詳細頁
     router.push(`/trip/${data.id}`)
   } else {
     alert('新增失敗: ' + (error?.message || ''))
@@ -122,8 +133,6 @@ async function handleCreateTrip() {
 function goToDetail(id: number) {
   router.push(`/trip/${id}`)
 }
-
-onMounted(fetchTrips)
 </script>
 
 <template>
@@ -134,18 +143,20 @@ onMounted(fetchTrips)
       <div>
           <h1 class="text-3xl font-extrabold text-[#283618] tracking-wide mb-1">我的旅程 <span class="text-2xl align-middle">✈️</span></h1>
           <p class="text-stone-500 text-sm font-medium">
-              <!-- {{ isEditMode ? '🛠️ 管理員模式：可新增或修改行程' : '規劃下一場精彩的冒險' }} -->
               規劃下一場精采的冒險
           </p>
       </div>
-      <button @click="toggleEditMode" 
-              class="p-2.5 rounded-xl transition-all duration-300 border"
-              :class="isEditMode ? 'bg-red-50 border-red-100 text-red-500 shadow-sm' : 'bg-stone-100 border-transparent text-stone-400'">
-          {{ isEditMode ? '🔓' : '🔒' }}
+      
+      <button v-if="user" @click="logout" class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl text-sm font-bold transition">
+          登出
+      </button>
+      <button v-else @click="login" class="px-4 py-2 bg-[#4285F4] hover:bg-[#3367D6] text-white rounded-xl text-sm font-bold shadow-sm transition flex items-center gap-2">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"/></svg>
+          Google 登入
       </button>
   </div>
       
-  <div v-if="isEditMode" class="bg-white p-2 rounded-2xl shadow-lg shadow-stone-200/50 mb-10 flex gap-2 items-center border border-stone-100 animate-in fade-in zoom-in duration-300">
+  <div v-if="user" class="bg-white p-2 rounded-2xl shadow-lg shadow-stone-200/50 mb-10 flex gap-2 items-center border border-stone-100 animate-in fade-in zoom-in duration-300">
       <div class="flex-1 relative">
           <span class="absolute left-3 top-3 text-lg opacity-50">📝</span>
           <input 
@@ -160,14 +171,17 @@ onMounted(fetchTrips)
       </button>
   </div>
 
-  <div v-else class="mb-6"></div>
+  <div v-else class="mb-6 p-4 bg-[#E8F0FE] rounded-2xl border border-[#D2E3FC] text-[#1967D2] text-sm font-medium flex items-center gap-3">
+      <span>👋</span>
+      請先使用 Google 登入，即可開始規劃並管理您的專屬行程。
+  </div>
 
       <div v-if="isLoading" class="text-center py-12">
           <div class="text-3xl animate-bounce mb-2">🌏</div>
           <p class="text-stone-400 text-sm font-medium">正在載入您的旅程...</p>
       </div>
       
-      <div v-else class="space-y-4 pb-20">
+      <div v-else-if="user" class="space-y-4 pb-20">
         <div v-for="trip in trips" :key="trip.id" 
              @click="goToDetail(trip.id)"
              class="group bg-white p-5 rounded-2xl shadow-sm border border-stone-100 cursor-pointer hover:shadow-md hover:border-[#D4A373] hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">

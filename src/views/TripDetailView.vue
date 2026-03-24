@@ -44,8 +44,9 @@
   }
 
   async function loadData() {
-    // 檢查管理員權限 
-    isEditMode.value = localStorage.getItem('trip_admin_access') === 'true'
+    // 檢查登入狀態
+    const { data: { session } } = await supabase.auth.getSession()
+    isEditMode.value = !!session?.user
 
     const { data: trip } = await supabase.from('trips').select('*').eq('id', tripId).single()
     if (trip) {
