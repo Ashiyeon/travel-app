@@ -144,18 +144,14 @@ function goToDetail(id: number | string) {
       
   <div class="mb-8 pl-1 flex justify-between items-end">
       <div>
-          <h1 class="text-3xl font-extrabold text-[#283618] tracking-wide mb-1">我的旅程 <span class="text-2xl align-middle">✈️</span></h1>
+          <h1 class="text-3xl font-extrabold text-[#283618] tracking-wide mb-1"> 空姐叫我 <span class="text-2xl align-middle"></span></h1>
           <p class="text-stone-500 text-sm font-medium">
-              規劃下一場精采的冒險
+              把你的壓力，丟在不同時區
           </p>
       </div>
       
       <button v-if="user" @click="logout" class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl text-sm font-bold transition">
           登出
-      </button>
-      <button v-else @click="login" class="px-4 py-2 bg-[#4285F4] hover:bg-[#3367D6] text-white rounded-xl text-sm font-bold shadow-sm transition flex items-center gap-2">
-          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"/></svg>
-          Google 登入
       </button>
   </div>
       
@@ -175,29 +171,41 @@ function goToDetail(id: number | string) {
   </div>
 
   <div v-else>
-      <div class="mb-6 p-4 bg-[#E8F0FE] rounded-2xl border border-[#D2E3FC] text-[#1967D2] text-sm font-medium flex items-center gap-3">
-          <span>👋</span>
-          請先使用 Google 登入，即可開始規劃並管理您的專屬行程。
+      <div class="mb-8 p-6 bg-stone-100/80 rounded-3xl border border-stone-200 flex flex-col items-center gap-5 shadow-sm text-center relative overflow-hidden">
+          <div class="absolute -right-4 -top-4 text-6xl opacity-10 rotate-12">✈️</div>
+          <div class="text-stone-600 text-sm font-medium relative z-10">
+              登入即可解鎖完整的行程規劃功能，開始您的專屬旅程。
+          </div>
+          <button @click="login" class="relative z-10 px-8 py-3 bg-[#1A365D] hover:bg-[#244A7D] text-white rounded-md text-base font-bold tracking-widest shadow-md border-b-[3px] border-[#0D213D] active:border-b-[1px] active:translate-y-[2px] transition-all flex items-center gap-2">
+              <span class="text-lg">🛎️</span> 按下呼叫鈴
+          </button>
       </div>
       
       <!-- 範例行程 (給未登入者看) -->
       <h3 class="text-sm font-bold text-stone-500 mb-3 ml-1">看看範例行程</h3>
       <div @click="goToDetail('demo-korea')"
-           class="group bg-white p-5 rounded-2xl shadow-sm border border-stone-100 cursor-pointer hover:shadow-md hover:border-[#D4A373] hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden mb-4">
-          <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#D4A373] opacity-100"></div>
-          <div class="flex justify-between items-center pl-2">
-              <div>
-                  <h2 class="text-lg font-bold text-[#283618] group-hover:text-[#606C38] transition-colors tracking-wide">🇰🇷 首爾 5 天 4 夜自由行</h2>
-                  <p class="text-xs text-stone-500 font-medium mt-0.5">吃爆烤肉與逛街之旅 (範例)</p>
-                  <div class="flex items-center gap-1 mt-2 text-xs text-stone-400 font-medium font-mono">
-                      <span>📅</span>
-                      <span>2026.04.01 - 04.05</span>
-                  </div>
+           class="group bg-white rounded-2xl shadow-sm border border-stone-200 cursor-pointer hover:shadow-md hover:border-[#D4A373] hover:-translate-y-0.5 transition-all duration-300 flex overflow-hidden mb-4 relative">
+          
+          <div class="flex-1 p-5 relative">
+              <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#D4A373] opacity-100"></div>
+              <h2 class="text-lg font-bold text-[#283618] group-hover:text-[#606C38] transition-colors tracking-wide">🇰🇷 首爾 5 天 4 夜自由行</h2>
+              <p class="text-xs text-stone-500 font-medium mt-0.5">吃爆烤肉與逛街之旅 (範例)</p>
+              <div class="flex items-center gap-1 mt-2 text-xs text-stone-400 font-medium font-mono">
+                  <span>📅</span>
+                  <span>2026.04.01 - 04.05</span>
               </div>
+          </div>
+          
+          <div class="w-0 border-l-2 border-dashed border-stone-200 my-3 relative"></div>
+          
+          <div class="w-16 flex items-center justify-center bg-stone-50/50 group-hover:bg-[#FDFCF8] transition-colors">
               <div class="text-stone-300 text-2xl group-hover:text-[#D4A373] group-hover:translate-x-1 transition-all">
                   ›
               </div>
           </div>
+
+          <div class="absolute top-[-10px] right-[55px] w-5 h-5 bg-[#FDFCF8] rounded-full border border-stone-200 group-hover:border-[#D4A373] transition-colors z-10"></div>
+          <div class="absolute bottom-[-10px] right-[55px] w-5 h-5 bg-[#FDFCF8] rounded-full border border-stone-200 group-hover:border-[#D4A373] transition-colors z-10"></div>
       </div>
   </div>
 
@@ -209,23 +217,28 @@ function goToDetail(id: number | string) {
       <div v-else-if="user" class="space-y-4 pb-20">
         <div v-for="trip in trips" :key="trip.id" 
              @click="goToDetail(trip.id)"
-             class="group bg-white p-5 rounded-2xl shadow-sm border border-stone-100 cursor-pointer hover:shadow-md hover:border-[#D4A373] hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
+             class="group bg-white rounded-2xl shadow-sm border border-stone-200 cursor-pointer hover:shadow-md hover:border-[#D4A373] hover:-translate-y-0.5 transition-all duration-300 flex overflow-hidden relative">
              
-          <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#D4A373] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          
-          <div class="flex justify-between items-center pl-2">
-              <div>
-                  <h2 class="text-lg font-bold text-[#283618] group-hover:text-[#606C38] transition-colors tracking-wide">{{ trip.name }}</h2>
-                  <p v-if="trip.subtitle" class="text-xs text-stone-500 font-medium mt-0.5">{{ trip.subtitle }}</p>
-                  <div class="flex items-center gap-1 mt-2 text-xs text-stone-400 font-medium font-mono">
-                      <span>📅</span>
-                      <span>{{ displayTripDates(trip) || '尚未設定日期' }}</span>
-                  </div>
+          <div class="flex-1 p-5 relative">
+              <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#D4A373] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <h2 class="text-lg font-bold text-[#283618] group-hover:text-[#606C38] transition-colors tracking-wide">{{ trip.name }}</h2>
+              <p v-if="trip.subtitle" class="text-xs text-stone-500 font-medium mt-0.5">{{ trip.subtitle }}</p>
+              <div class="flex items-center gap-1 mt-2 text-xs text-stone-400 font-medium font-mono">
+                  <span>📅</span>
+                  <span>{{ displayTripDates(trip) || '尚未設定日期' }}</span>
               </div>
+          </div>
+          
+          <div class="w-0 border-l-2 border-dashed border-stone-200 my-3 relative"></div>
+          
+          <div class="w-16 flex items-center justify-center bg-stone-50/50 group-hover:bg-[#FDFCF8] transition-colors">
               <div class="text-stone-300 text-2xl group-hover:text-[#D4A373] group-hover:translate-x-1 transition-all">
                   ›
               </div>
           </div>
+
+          <div class="absolute top-[-10px] right-[55px] w-5 h-5 bg-[#FDFCF8] rounded-full border border-stone-200 group-hover:border-[#D4A373] transition-colors z-10"></div>
+          <div class="absolute bottom-[-10px] right-[55px] w-5 h-5 bg-[#FDFCF8] rounded-full border border-stone-200 group-hover:border-[#D4A373] transition-colors z-10"></div>
         </div>
 
         <div v-if="trips.length === 0" class="text-center py-12 border-2 border-dashed border-stone-200 rounded-2xl bg-stone-50/50">
