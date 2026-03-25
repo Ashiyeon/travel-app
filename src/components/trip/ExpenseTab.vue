@@ -553,10 +553,12 @@ defineExpose({ loadData: loadExpensesData })
                     <input v-model="expenseForm.expense_date" type="date" class="w-full appearance-none border border-stone-300 bg-white rounded-lg px-3 py-2 m-0 focus:outline-none focus:border-[#606C38] min-h-[42px]" />
                 </div>
                 <div>
-                    <label class="text-xs text-stone-500 flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">誰付的？ *必填</label>
-                    <select v-model="expenseForm.paid_by" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#606C38]">
-                        <option v-for="member in props.tripMembers" :key="member" :value="member">{{ member }}</option>
-                    </select>
+                    <label class="text-xs text-stone-500 flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 mb-2">誰付的？ *必填</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button v-for="member in props.tripMembers" :key="member" @click="expenseForm.paid_by = member" class="px-4 py-2 rounded-full text-sm font-bold transition-all border-2" :class="expenseForm.paid_by === member ? 'bg-[#283618] text-white border-[#283618] shadow-md' : 'bg-white text-stone-600 border-stone-200 hover:border-[#606C38]'">
+                            {{ member }}
+                        </button>
+                    </div>
                 </div>
                 <div class="mt-2">
                     <div class="flex justify-between items-end mb-2">
@@ -565,9 +567,9 @@ defineExpose({ loadData: loadExpensesData })
                     </div>
                     
                     <div class="flex gap-2 mb-3 bg-stone-100 p-1 rounded-lg">
-                        <button @click="expenseForm.split_rule = 'EQUAL'" class="flex-1 py-1 text-xs font-bold rounded-md transition-all" :class="expenseForm.split_rule === 'EQUAL' ? 'bg-white shadow text-[#283618]' : 'text-stone-500'">🟰 平分</button>
-                        <button @click="expenseForm.split_rule = 'EXACT'" class="flex-1 py-1 text-xs font-bold rounded-md transition-all" :class="expenseForm.split_rule === 'EXACT' ? 'bg-white shadow text-[#283618]' : 'text-stone-500'">💰 具體金額</button>
-                        <button @click="expenseForm.split_rule = 'PERCENT'" class="flex-1 py-1 text-xs font-bold rounded-md transition-all" :class="expenseForm.split_rule === 'PERCENT' ? 'bg-white shadow text-[#283618]' : 'text-stone-500'">📊 百分比</button>
+                        <button @click="expenseForm.split_rule = 'EQUAL'" class="flex-1 py-1 text-xs font-bold rounded-md transition-all" :class="expenseForm.split_rule === 'EQUAL' ? 'bg-white shadow text-[#283618]' : 'text-stone-500'"> 平分</button>
+                        <button @click="expenseForm.split_rule = 'EXACT'" class="flex-1 py-1 text-xs font-bold rounded-md transition-all" :class="expenseForm.split_rule === 'EXACT' ? 'bg-white shadow text-[#283618]' : 'text-stone-500'"> 具體金額</button>
+                        <button @click="expenseForm.split_rule = 'PERCENT'" class="flex-1 py-1 text-xs font-bold rounded-md transition-all" :class="expenseForm.split_rule === 'PERCENT' ? 'bg-white shadow text-[#283618]' : 'text-stone-500'"> 百分比</button>
                     </div>
 
                     <div class="space-y-2">

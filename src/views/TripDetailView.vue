@@ -20,8 +20,14 @@
   const subtitleRaw = ref('')
   const startDateRaw = ref('')
   const tripMembers = ref<string[]>([])
+  const sharedEmails = ref<string[]>([])
   const isEditMode = ref(false)
   const selectedDate = ref('')
+  
+  // 參與者管理 Modal 狀態
+  const showMembersModal = ref(false)
+  const newMemberName = ref('')
+  const newMemberEmail = ref('')
 
   // 用於獲取子組件資料以計算日期標籤
   const itineraryRef = ref<any>(null)
@@ -29,6 +35,30 @@
 
   function goBack() {
     router.push('/')
+  }
+
+  async function handleAddMember() {
+      if (!newMemberName.value.trim()) return alert('請輸入名稱')
+      
+      const updatedMembers = [...tripMembers.value, newMemberName.value.trim()]
+      const updatedEmails = newMemberEmail.value.trim() 
+          ? [...sharedEmails.value, newMemberEmail.value.trim()] 
+          : sharedEmails.value
+
+      const payload: any = { members: updatedMembers }
+      if (newMemberEmail.value.trim()) {
+          payload.shared_emails = updatedEmails
+      }
+
+      const { error } = await supabase.from('trips').update(payload).eq('id', tripId)
+      if (error) {
+          alert('新增失敗: ' + error.message)
+      } else {
+          tripMembers.value = updatedMembers
+          sharedEmails.value = updatedEmails
+          newMemberName.value = ''
+          newMemberEmail.value = ''
+      }
   }
 
   // 計算所有出現過的日期，用於頂部頁籤
@@ -54,6 +84,7 @@
         subtitleRaw.value = trip.subtitle || ''
         startDateRaw.value = trip.start_date
         tripMembers.value = trip.members || []
+        sharedEmails.value = trip.shared_emails || []
         if (trip.start_date && trip.end_date) {
             const f = (s: string) => { const d = new Date(s); return `${d.getMonth()+1}月${d.getDate()}日` }
             tripDates.value = `${f(trip.start_date)} - ${f(trip.end_date)}`
@@ -67,9 +98,12 @@
 <template>
   <div class="min-h-screen bg-[#FDFCF8] pb-24 font-sans text-stone-700">
     <!-- 返回列表 -->
-    <div class="px-4 py-2 flex items-center">
+    <div class="px-4 py-2 flex items-center justify-between">
         <button @click="goBack" class="flex items-center gap-1 text-[#606C38] font-bold hover:text-[#283618] transition">
             <span class="text-lg">‹</span> 返回列表
+        </button>
+        <button v-if="isEditMode" @click="showMembersModal = true" class="text-sm font-bold text-[#283618] bg-[#E9EDC9] px-3 py-1.5 rounded-lg shadow-sm hover:bg-[#D4A373] hover:text-white transition">
+            👥 參與者
         </button>
     </div>
 
@@ -134,6 +168,44 @@
       :trip-members="tripMembers"
       :selected-date="selectedDate"
     />
+
+    <!-- 參與者管理 Modal -->
+    <div v-if="showMembersModal" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4 backdrop-blur-[2px]" @click.self="showMembersModal = false">
+        <div class="bg-[#FDFCF8] w-full max-w-md rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between mb-4 items-center border-b border-stone-100 pb-3">
+                <h3 class="font-bold text-lg text-[#283618] tracking-wide flex items-center gap-2">👥 參與者管理</h3>
+                <button @click="showMembersModal=false" class="text-2xl text-stone-400 hover:text-stone-600 transition">×</button>
+            </div>
+            
+            <div class="mb-4">
+                <p class="text-xs font-bold text-stone-500 mb-2">目前參與者</p>
+                <div class="flex flex-wrap gap-2">
+                    <span v-for="member in tripMembers" :key="member" class="px-3 py-1.5 bg-stone-100 text-stone-700 rounded-lg text-sm font-bold border border-stone-200">
+                        {{ member }}
+                    </span>
+                    <span v-if="tripMembers.length === 0" class="text-xs text-stone-400">尚無其他參與者</span>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm mt-6">
+                <p class="text-sm font-bold text-[#606C38] mb-3">新增參與者</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs font-bold text-stone-500 mb-1 block">顯示名稱 *</label>
+                        <input v-model="newMemberName" placeholder="例如: 小明" class="w-full border border-stone-200 bg-stone-50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#606C38]" />
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-stone-500 mb-1 block">對方登入的 Email (供共用權限，選填)</label>
+                        <input v-model="newMemberEmail" type="email" placeholder="例如: ming@example.com" class="w-full border border-stone-200 bg-stone-50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#606C38]" />
+                    </div>
+                    <button @click="handleAddMember" class="w-full py-2.5 mt-2 bg-[#283618] text-white rounded-xl font-bold text-sm hover:bg-[#3A5A40] transition active:scale-95">新增並賦予權限</button>
+                </div>
+            </div>
+            <p class="text-[10px] text-stone-400 mt-4 leading-relaxed">
+                提示：若填寫對方的 Google 登入 Email，並在資料庫正確設定權限後，對方即可在首頁看到並共同編輯此行程。
+            </p>
+        </div>
+    </div>
 
   </div>
 </template>
