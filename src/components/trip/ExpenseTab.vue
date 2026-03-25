@@ -204,6 +204,16 @@ async function handleDeleteExpense() {
 }
 
 async function loadExpensesData() {
+    if (props.tripId === 'demo-korea') {
+        expenses.value = [
+            { id: 1, title: '首爾來回機票', amount_original: 36000, currency: 'TWD', exchange_rate: 1, category: '機票', payment_method: '信用卡', expense_date: '2026-03-01', note: '長榮早去晚回', paid_by: '小美', split_with: ['小美', '大壯', '阿明'], split_rule: 'EQUAL', split_details: {} },
+            { id: 2, title: '荒謬的生肉', amount_original: 45000, currency: 'KRW', exchange_rate: 0.024, category: '餐飲', payment_method: '現金', expense_date: '2026-04-01', note: '烤五花肉吃到飽', paid_by: '大壯', split_with: ['小美', '大壯', '阿明'], split_rule: 'EQUAL', split_details: {} },
+            { id: 3, title: 'L7 弘大飯店(4晚)', amount_original: 16000, currency: 'TWD', exchange_rate: 1, category: '住宿', payment_method: '信用卡', expense_date: '2026-04-01', note: 'Agoda 訂房', paid_by: '阿明', split_with: ['小美', '大壯', '阿明'], split_rule: 'EQUAL', split_details: {} },
+            { id: 4, title: 'Olive Young 美妝', amount_original: 120000, currency: 'KRW', exchange_rate: 0.024, category: '購物', payment_method: '信用卡', expense_date: '2026-04-03', note: '小美自己買的保養品', paid_by: '小美', split_with: ['小美'], split_rule: 'EQUAL', split_details: {} },
+            { id: 5, title: '機場包車接送', amount_original: 2500, currency: 'TWD', exchange_rate: 1, category: '交通', payment_method: '信用卡', expense_date: '2026-04-05', note: '回程行李太多叫車', paid_by: '大壯', split_with: ['小美', '大壯', '阿明'], split_rule: 'EXACT', split_details: { '小美': 800, '大壯': 800, '阿明': 900 } },
+        ]
+        return
+    }
     const { data } = await supabase.from('travel_expenses').select('*').eq('trip_id', props.tripId).order('expense_date', { ascending: false })
     expenses.value = data || []
 }

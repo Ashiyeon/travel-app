@@ -73,6 +73,20 @@ async function handleDeleteActivity() {
 }
 
 async function loadActivitiesData() {
+  if (props.tripId === 'demo-korea') {
+      activities.value = [
+          { id: 1, date: '2026-04-01', start_time: '12:00', category: '交通', title: '抵達仁川機場', description: '搭乘 AREX 機場快線前往市區' },
+          { id: 2, date: '2026-04-01', start_time: '15:00', category: '住宿', title: '弘大 L7 飯店 Check-in', description: '先放行李' },
+          { id: 3, date: '2026-04-01', start_time: '17:00', category: '景點', title: '弘大商圈逛街', description: '買衣服、拍貼機' },
+          { id: 4, date: '2026-04-01', start_time: '19:30', category: '餐飲', title: '荒謬的生肉', description: '烤五花肉吃到飽！' },
+          { id: 5, date: '2026-04-02', start_time: '10:00', category: '景點', title: '景福宮韓服體驗', description: '記得提早預約韓服' },
+          { id: 6, date: '2026-04-02', start_time: '13:00', category: '餐飲', title: '土俗村蔘雞湯', description: '逛完吃熱呼呼的雞湯' },
+          { id: 7, date: '2026-04-02', start_time: '15:00', category: '景點', title: '北村韓屋村', description: '漫步傳統街道' },
+          { id: 8, date: '2026-04-03', start_time: '10:30', category: '景點', title: '廣藏市場', description: '吃綠豆煎餅、生拌牛肉' },
+          { id: 9, date: '2026-04-03', start_time: '14:00', category: '活動', title: '明洞商圈血拚', description: '美妝保養品補貨' }
+      ]
+      return
+  }
   const { data } = await supabase.from('activities').select('*').eq('trip_id', props.tripId).order('date').order('start_time')
   activities.value = data || []
 }

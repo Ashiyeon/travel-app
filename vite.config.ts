@@ -11,10 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: {
-        name: 'travel-app',
+        name: '空姐叫我',
         //更改app名稱
-        short_name: '空姐叫我',
-        display: 'standalone',
+        short_name: '空姐叫我',        display: 'standalone',
         start_url: '/travel-app/',
         scope: '/travel-app/',
         icons: [

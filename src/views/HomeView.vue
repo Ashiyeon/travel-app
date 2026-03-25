@@ -133,7 +133,7 @@ async function handleCreateTrip() {
 }
 
 // 跳轉到詳細頁
-function goToDetail(id: number) {
+function goToDetail(id: number | string) {
   router.push(`/trip/${id}`)
 }
 </script>
@@ -174,9 +174,31 @@ function goToDetail(id: number) {
       </button>
   </div>
 
-  <div v-else class="mb-6 p-4 bg-[#E8F0FE] rounded-2xl border border-[#D2E3FC] text-[#1967D2] text-sm font-medium flex items-center gap-3">
-      <span>👋</span>
-      請先使用 Google 登入，即可開始規劃並管理您的專屬行程。
+  <div v-else>
+      <div class="mb-6 p-4 bg-[#E8F0FE] rounded-2xl border border-[#D2E3FC] text-[#1967D2] text-sm font-medium flex items-center gap-3">
+          <span>👋</span>
+          請先使用 Google 登入，即可開始規劃並管理您的專屬行程。
+      </div>
+      
+      <!-- 範例行程 (給未登入者看) -->
+      <h3 class="text-sm font-bold text-stone-500 mb-3 ml-1">看看範例行程</h3>
+      <div @click="goToDetail('demo-korea')"
+           class="group bg-white p-5 rounded-2xl shadow-sm border border-stone-100 cursor-pointer hover:shadow-md hover:border-[#D4A373] hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden mb-4">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#D4A373] opacity-100"></div>
+          <div class="flex justify-between items-center pl-2">
+              <div>
+                  <h2 class="text-lg font-bold text-[#283618] group-hover:text-[#606C38] transition-colors tracking-wide">🇰🇷 首爾 5 天 4 夜自由行</h2>
+                  <p class="text-xs text-stone-500 font-medium mt-0.5">吃爆烤肉與逛街之旅 (範例)</p>
+                  <div class="flex items-center gap-1 mt-2 text-xs text-stone-400 font-medium font-mono">
+                      <span>📅</span>
+                      <span>2026.04.01 - 04.05</span>
+                  </div>
+              </div>
+              <div class="text-stone-300 text-2xl group-hover:text-[#D4A373] group-hover:translate-x-1 transition-all">
+                  ›
+              </div>
+          </div>
+      </div>
   </div>
 
       <div v-if="isLoading" class="text-center py-12">

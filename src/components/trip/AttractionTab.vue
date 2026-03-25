@@ -83,6 +83,29 @@ async function handleDeleteAttraction() {
 }
 
 async function loadAttractionsData() {
+  if (props.tripId === 'demo-korea') {
+      attractions.value = [
+          { 
+              id: 1, date: '2026-04-01', location_tag: '弘大', title: '弘大商圈 (Hongdae)', subtitle: '年輕人必逛的街頭潮流聖地', 
+              description: '充滿街頭表演、獨立服飾店、拍貼機與無數特色美食的商圈，越晚越熱鬧！', 
+              highlights: '便宜好看的韓系服飾\n各式特色咖啡廳\n街頭藝人熱舞表演', 
+              must_eat: '糖葫蘆\n烤腸\n路邊小吃黑輪', 
+              transport_info: '地鐵2號線 弘大入口站 9號出口',
+              opening_hours: '大部分店家 11:00 - 22:00',
+              map_url: 'https://maps.app.goo.gl/dummy' 
+          },
+          { 
+              id: 2, date: '2026-04-02', location_tag: '鐘路區', title: '景福宮 (Gyeongbokgung)', subtitle: '穿韓服穿越朝鮮時代', 
+              description: '韓國最具代表性的皇家宮殿，穿著韓服可以免費入場！', 
+              highlights: '勤政殿拍照\n光化門交接儀式\n秋季賞楓/春季賞櫻', 
+              ticket_price: '3000 韓元 (穿韓服免費)',
+              transport_info: '地鐵3號線 景福宮站 5號出口', 
+              opening_hours: '09:00 - 18:00 (週二公休)',
+              map_url: 'https://maps.app.goo.gl/dummy2' 
+          }
+      ]
+      return
+  }
   const { data } = await supabase.from('attractions').select('*').eq('trip_id', props.tripId).order('id', { ascending: true })
   attractions.value = data || []
 }

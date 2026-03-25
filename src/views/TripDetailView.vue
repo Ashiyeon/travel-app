@@ -78,6 +78,17 @@
     const { data: { session } } = await supabase.auth.getSession()
     isEditMode.value = !!session?.user
 
+    if (tripId === 'demo-korea') {
+        tripName.value = '🇰🇷 首爾 5 天 4 夜自由行'
+        subtitleRaw.value = '吃爆烤肉與逛街之旅 (範例)'
+        startDateRaw.value = '2026-04-01'
+        tripDates.value = '4月1日 - 4月5日'
+        tripMembers.value = ['小美', '大壯', '阿明']
+        sharedEmails.value = []
+        isEditMode.value = false // 範例不可編輯
+        return
+    }
+
     const { data: trip } = await supabase.from('trips').select('*').eq('id', tripId).single()
     if (trip) {
         tripName.value = trip.name

@@ -89,6 +89,28 @@ async function handleDeleteAccommodation() {
 }
 
 async function loadAccommodationData() {
+    if (props.tripId === 'demo-korea') {
+        accommodations.value = [
+            { 
+                id: 1, 
+                name: 'L7 弘大飯店 (L7 Hongdae by LOTTE)', 
+                address: '首爾特別市麻浦區楊花路141', 
+                station: '弘大入口站 1號出口 (步行 1 分鐘)', 
+                check_in_date: '2026-04-01', 
+                check_out_date: '2026-04-05', 
+                check_in_time: '15:00', 
+                check_out_time: '12:00', 
+                google_map_url: 'https://maps.app.goo.gl/dummy',
+                transportation: [
+                    { step: 1, text: '從仁川機場搭乘 AREX 機場快線 (普通車)' }, 
+                    { step: 2, text: '於「弘大入口站」下車，由 1 號出口出站' },
+                    { step: 3, text: '出站後向右步行約 1 分鐘即達' }
+                ],
+                transport_note: '若行李較多，建議搭乘普通車免轉乘直達弘大，費用也比直達車便宜！'
+            }
+        ]
+        return
+    }
     const { data } = await supabase.from('accommodations').select('*').eq('trip_id', props.tripId).order('check_in_date', { ascending: true })
     accommodations.value = data || []
 }
