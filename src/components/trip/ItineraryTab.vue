@@ -114,30 +114,45 @@ defineExpose({ loadData: loadActivitiesData, activities })
         <template v-else>
             <div v-for="act in filteredActivities" :key="act.id" 
                 @click="props.isEditMode ? openActivityForm(act) : null" 
-                :class="{ 'cursor-default': !props.isEditMode, 'hover:border-[#D4A373]': props.isEditMode }"
-                class="bg-white p-4 rounded-2xl shadow-sm border border-stone-100 flex gap-4 transition-colors relative group">
+                :class="{ 'cursor-default': !props.isEditMode, 'hover:border-stone-300': props.isEditMode }"
+                class="bg-white p-5 rounded-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] border border-white ring-1 ring-stone-200 flex gap-8 transition-all relative group mb-4">
                 
-                <!-- 左側時間與飛行航線 -->
-                <div class="flex flex-col items-center w-16 border-r-2 border-dashed border-stone-300 pr-4 py-1 relative">
-                    <span class="text-[#BC4749] font-black font-mono text-sm">{{ act.start_time || '--:--' }}</span>
-                    <span class="text-[14px] text-stone-400 mt-1">{{ act.category }}</span>
-                    <!-- 航線節點 (飛機或雲朵) -->
-                    <div class="absolute -right-[11px] top-3 w-6 h-6 bg-[#FDFCF8] rounded-full flex items-center justify-center text-[12px] shadow-sm border border-stone-200 z-10">
-                        {{ act.category === '交通' ? '✈️' : '☁️' }}
+                <!-- 左側時間與飛行航線 (Option B: Typography-focused + Monospaced) -->
+                <div class="flex flex-col items-center w-20 relative pt-1">
+                    <div class="text-[#283618] font-mono text-xl font-black tracking-tight text-center leading-none drop-shadow-sm">
+                        {{ act.start_time || '--:--' }}
+                    </div>
+                    <!-- 裝飾細線 -->
+                    <div class="w-8 h-[2px] bg-[#606C38]/40 mt-2.5 rounded-full"></div>
+                    <span class="text-[10px] text-stone-400 mt-2 font-bold uppercase tracking-tighter">{{ act.category }}</span>
+                    
+                    <!-- 航線路徑與圖標 -->
+                    <div class="absolute -right-[23px] top-12 bottom-0 flex flex-col items-center">
+                        <div class="w-[2px] h-full bg-stone-300/50"></div>
+                    </div>
+                    <div class="absolute -right-[35px] top-2.5 w-6 h-6 bg-[#FDFCF8] rounded-full flex items-center justify-center text-[12px] shadow-sm border border-stone-200 z-10">
+                        <span v-if="act.category === '交通'">✈️</span>
+                        <span v-else-if="act.category === '餐飲'">🍽️</span>
+                        <span v-else-if="act.category === '住宿'">🏨</span>
+                        <span v-else>📍</span>
                     </div>
                 </div>
 
-                <div class="flex-1">
-                    <div class="flex items-center gap-1 mb-1">
-                        <span>{{ getIcon(act.category) }}</span>
-                        <h3 class="font-bold text-[#283618]">{{ act.title }}</h3>
+                <div class="flex-1 pt-1 pl-2">
+                    <div class="flex items-center gap-2 mb-2">
+                        <h3 class="font-black text-lg text-[#283618] tracking-tight">{{ act.title }}</h3>
                     </div>
-                    <p class="text-stone-500 text-sm mt-1 line-clamp-2 break-all">{{ act.description }}</p>
-                    <a v-if="act.map_url" :href="act.map_url" target="_blank" @click.stop class="inline-flex items-center gap-1 mt-2 bg-[#E9EDC9] text-[#283618] text-[12px] px-2 py-1 rounded-full font-bold hover:bg-[#606C38] hover:text-white transition-colors shadow-sm">
-                         查看地圖
-                    </a>
+                    <p class="text-stone-500 text-sm leading-relaxed mb-3 line-clamp-3">{{ act.description }}</p>
+                    
+                    <div class="flex flex-wrap gap-2">
+                        <a v-if="act.map_url" :href="act.map_url" target="_blank" @click.stop class="inline-flex items-center gap-1.5 bg-[#E9EDC9]/30 text-[#283618] text-[11px] px-3 py-1.5 rounded-lg font-bold hover:bg-[#283618] hover:text-white transition-all shadow-sm border border-[#E9EDC9]">
+                             VIEW ON MAP
+                        </a>
+                    </div>
                 </div>
-                <div v-if="props.isEditMode" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-stone-300">✏️</div>
+                <div v-if="props.isEditMode" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-stone-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                </div>
             </div>
 
             <div v-if="filteredActivities.length === 0" class="text-center py-20 text-stone-400">

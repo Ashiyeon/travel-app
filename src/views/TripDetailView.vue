@@ -109,35 +109,63 @@
 <template>
   <div class="min-h-screen bg-[#FDFCF8] pb-24 font-sans text-stone-700">
     <!-- 返回列表 -->
-    <div class="px-4 py-2 flex items-center justify-between">
+    <div class="px-4 py-4 flex items-center justify-between">
         <button @click="goBack" class="flex items-center gap-1 text-[#606C38] font-bold hover:text-[#283618] transition">
-            <span class="text-lg">‹</span> 返回列表
+            <span class="text-xl">‹</span> 返回列表
         </button>
-        <button v-if="isEditMode" @click="showMembersModal = true" class="text-sm font-bold text-[#283618] bg-[#E9EDC9] px-3 py-1.5 rounded-lg shadow-sm hover:bg-[#D4A373] hover:text-white transition">
+        <button v-if="isEditMode" @click="showMembersModal = true" class="text-sm font-bold text-[#283618] bg-[#E9EDC9] px-4 py-2 rounded-xl shadow-sm hover:bg-[#D4A373] hover:text-white transition">
             👥 參與者
         </button>
     </div>
 
-    <!-- 旅行資訊 banner (行李吊牌樣式) -->
-    <div class="banner relative rounded-2xl mb-4 mx-4 shadow-lg shadow-stone-200 bg-gradient-to-r from-[#606C38] to-[#283618]">
-      <!-- 吊牌孔與掛繩 -->
-      <div class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 z-10">
-        <!-- 掛繩 -->
-        <div class="absolute w-12 h-1.5 bg-[#D4A373] rounded-full -left-8 -rotate-12 shadow-sm border border-black/10 z-10"></div>
-        <!-- 圓孔 -->
-        <div class="absolute w-6 h-6 bg-[#FDFCF8] rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] z-20 flex items-center justify-center">
-          <div class="w-3 h-3 bg-black/10 rounded-full"></div>
+    <!-- 旅行資訊 banner (擬真行李吊牌樣式) -->
+    <div class="relative mb-10 mx-6">
+      <!-- 模擬皮線/掛繩 -->
+      <div class="absolute -top-6 left-12 w-1 h-12 bg-[#8B4513] rounded-full -rotate-12 z-0 shadow-sm"></div>
+      <div class="absolute -top-8 left-10 w-4 h-4 rounded-full border-2 border-[#8B4513] -rotate-12 z-0"></div>
+
+      <!-- 行利吊牌本體 -->
+      <div class="relative bg-gradient-to-r from-[#606C38] to-[#283618] rounded-r-3xl rounded-l-lg p-6 pl-14 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] drop-shadow-lg transform -rotate-1 transition-transform hover:rotate-0">
+        <!-- 吊牌孔 -->
+        <div class="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#F5E6D3] rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] flex items-center justify-center">
+          <div class="w-4 h-4 bg-stone-800/20 rounded-full border border-stone-400/30"></div>
         </div>
-      </div>
-      
-      <div class="p-6 pl-14 text-white relative z-0">
-        <h1 class="text-xl font-extrabold tracking-wide">{{ tripName }}</h1>
-        <p class="text-sm opacity-90 mt-1 font-medium">{{ tripDates }} <span v-if="subtitleRaw">| {{ subtitleRaw }}</span></p>
+
+        <!-- 吊牌內容 -->
+        <div class="border-l-2 border-white/20 pl-4">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-[10px] font-black tracking-[0.2em] text-[#E9EDC9]/60 uppercase">Priority / Seoul Bound</span>
+          </div>
+          <h1 class="text-2xl font-extrabold tracking-tight text-white drop-shadow-sm">{{ tripName }}</h1>
+          <div class="flex items-center gap-3 mt-2">
+            <div class="flex flex-col">
+              <span class="text-[10px] text-[#E9EDC9]/70 font-bold uppercase tracking-wider">Date / Period</span>
+              <p class="text-sm font-mono font-bold text-white">{{ tripDates }}</p>
+            </div>
+            <div v-if="subtitleRaw" class="w-px h-8 bg-white/20 mx-1"></div>
+            <div v-if="subtitleRaw" class="flex flex-col">
+              <span class="text-[10px] text-[#E9EDC9]/70 font-bold uppercase tracking-wider">Remarks</span>
+              <p class="text-sm font-medium text-white/90 truncate max-w-[150px]">{{ subtitleRaw }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 條碼裝飾 (增加航旅質感) -->
+        <div class="absolute right-6 bottom-4 opacity-30 flex gap-[1px] h-8 items-end">
+          <div class="w-0.5 h-6 bg-white"></div>
+          <div class="w-1 h-8 bg-white"></div>
+          <div class="w-0.5 h-4 bg-white"></div>
+          <div class="w-0.5 h-7 bg-white"></div>
+          <div class="w-1.5 h-5 bg-white"></div>
+          <div class="w-0.5 h-8 bg-white"></div>
+          <div class="w-1 h-6 bg-white"></div>
+          <div class="w-0.5 h-7 bg-white"></div>
+        </div>
       </div>
     </div>
 
     <!-- 頂部功能導覽 -->
-    <nav class="bg-white rounded-2xl shadow-sm border border-stone-100 mb-4 mx-4 flex justify-between px-3 py-2 z-20">
+    <nav class="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-white/50 mb-6 mx-4 flex justify-between px-2 py-2 z-20 sticky top-4">
       <button class="tab" :class="{ active: activeTab==='itinerary' }" @click="activeTab='itinerary'"><div class="icon">🗓️</div><div class="label">行程</div></button>
       <button class="tab" :class="{ active: activeTab==='attractions' }" @click="activeTab='attractions'"><div class="icon">📍</div><div class="label">景點</div></button>
       <button class="tab" :class="{ active: activeTab==='accommodation' }" @click="activeTab='accommodation'"><div class="icon">🛏️</div><div class="label">住宿</div></button>
