@@ -117,9 +117,14 @@ defineExpose({ loadData: loadActivitiesData, activities })
                 :class="{ 'cursor-default': !props.isEditMode, 'hover:border-[#D4A373]': props.isEditMode }"
                 class="bg-white p-4 rounded-2xl shadow-sm border border-stone-100 flex gap-4 transition-colors relative group">
                 
-                <div class="flex flex-col items-center w-14 border-r border-stone-100 pr-2">
+                <!-- 左側時間與飛行航線 -->
+                <div class="flex flex-col items-center w-16 border-r-2 border-dashed border-stone-300 pr-4 py-1 relative">
                     <span class="text-[#BC4749] font-black font-mono text-sm">{{ act.start_time || '--:--' }}</span>
                     <span class="text-[14px] text-stone-400 mt-1">{{ act.category }}</span>
+                    <!-- 航線節點 (飛機或雲朵) -->
+                    <div class="absolute -right-[11px] top-3 w-6 h-6 bg-[#FDFCF8] rounded-full flex items-center justify-center text-[12px] shadow-sm border border-stone-200 z-10">
+                        {{ act.category === '交通' ? '✈️' : '☁️' }}
+                    </div>
                 </div>
 
                 <div class="flex-1">

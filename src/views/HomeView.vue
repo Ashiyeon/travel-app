@@ -146,7 +146,7 @@ function goToDetail(id: number | string) {
       <div>
           <h1 class="text-3xl font-extrabold text-[#283618] tracking-wide mb-1"> 空姐叫我 <span class="text-2xl align-middle"></span></h1>
           <p class="text-stone-500 text-sm font-medium">
-              把你的壓力，丟在不同時區
+              把壓力，丟在不同時區
           </p>
       </div>
       

@@ -118,9 +118,19 @@
         </button>
     </div>
 
-    <!-- 旅行資訊 banner -->
-    <div class="banner rounded-2xl overflow-hidden mb-4 mx-4 shadow-lg shadow-stone-200 bg-gradient-to-r from-[#606C38] to-[#283618]">
-      <div class="p-6 text-white">
+    <!-- 旅行資訊 banner (行李吊牌樣式) -->
+    <div class="banner relative rounded-2xl mb-4 mx-4 shadow-lg shadow-stone-200 bg-gradient-to-r from-[#606C38] to-[#283618]">
+      <!-- 吊牌孔與掛繩 -->
+      <div class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 z-10">
+        <!-- 掛繩 -->
+        <div class="absolute w-12 h-1.5 bg-[#D4A373] rounded-full -left-8 -rotate-12 shadow-sm border border-black/10 z-10"></div>
+        <!-- 圓孔 -->
+        <div class="absolute w-6 h-6 bg-[#FDFCF8] rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] z-20 flex items-center justify-center">
+          <div class="w-3 h-3 bg-black/10 rounded-full"></div>
+        </div>
+      </div>
+      
+      <div class="p-6 pl-14 text-white relative z-0">
         <h1 class="text-xl font-extrabold tracking-wide">{{ tripName }}</h1>
         <p class="text-sm opacity-90 mt-1 font-medium">{{ tripDates }} <span v-if="subtitleRaw">| {{ subtitleRaw }}</span></p>
       </div>
