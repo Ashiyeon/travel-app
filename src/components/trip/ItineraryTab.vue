@@ -91,14 +91,6 @@ async function loadActivitiesData() {
   activities.value = data || []
 }
 
-const getIcon = (cat: string) => {
-  if (cat === '交通') return '🚃'; 
-  if (cat === '餐飲') return '🍱'; 
-  if (cat === '住宿') return '🏨'; 
-  if (cat === '活動') return '⚾';
-  return '📍'; 
-}
-
 onMounted(loadActivitiesData)
 defineExpose({ loadData: loadActivitiesData, activities })
 </script>
