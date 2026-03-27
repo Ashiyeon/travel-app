@@ -165,7 +165,7 @@
     </div>
 
     <!-- 底部功能導覽 (LINE 樣式) -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 flex justify-between px-6 py-2 z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 flex justify-between px-6 pt-2 pb-10 z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
       <button class="tab" :class="{ active: activeTab==='itinerary' }" @click="activeTab='itinerary'"><div class="icon">🗓️</div><div class="label">行程</div></button>
       <button class="tab" :class="{ active: activeTab==='attractions' }" @click="activeTab='attractions'"><div class="icon">📍</div><div class="label">景點</div></button>
       <button class="tab" :class="{ active: activeTab==='accommodation' }" @click="activeTab='accommodation'"><div class="icon">🛏️</div><div class="label">住宿</div></button>

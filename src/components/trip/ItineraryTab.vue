@@ -111,7 +111,7 @@ defineExpose({ loadData: loadActivitiesData, activities })
                 
                 <!-- 左側時間與飛行航線 -->
                 <div class="flex flex-col items-center w-20 relative pt-1">
-                    <div class="text-[#283618] font-mono text-xl font-black tracking-tight text-center leading-none drop-shadow-sm">
+                    <div class="text-[#283618] font-mono text-xl font-bold tracking-normal text-center leading-none antialiased">
                         {{ act.start_time || '--:--' }}
                     </div>
                     <!-- 裝飾細線 -->
@@ -154,7 +154,7 @@ defineExpose({ loadData: loadActivitiesData, activities })
         </template>
     </div>
 
-    <button v-if="props.isEditMode" @click="openActivityForm()" class="fixed bottom-24 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-20 transition hover:scale-110 active:scale-95">+</button>
+    <button v-if="props.isEditMode" @click="openActivityForm()" class="fixed bottom-32 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-20 transition hover:scale-110 active:scale-95">+</button>
 
     <!-- 行程表單 -->
     <div v-if="showActivityForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showActivityForm = false">

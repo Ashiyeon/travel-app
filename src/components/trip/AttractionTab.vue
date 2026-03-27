@@ -163,7 +163,7 @@ defineExpose({ loadData: loadAttractionsData, attractions })
             <button v-if="props.isEditMode" @click="openAttractionForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個景點</button>
         </div>
     </div>
-    <button v-if="props.isEditMode" @click="openAttractionForm()" class="fixed bottom-24 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+    <button v-if="props.isEditMode" @click="openAttractionForm()" class="fixed bottom-32 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
 
     <!-- 景點表單 -->
     <div v-if="showAttractionForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showAttractionForm = false">

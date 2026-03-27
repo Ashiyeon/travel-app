@@ -515,7 +515,7 @@ defineExpose({ loadData: loadExpensesData })
         </div>
     </div>
 
-    <button v-if="props.isEditMode" @click="openExpenseForm()" class="fixed bottom-24 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+    <button v-if="props.isEditMode" @click="openExpenseForm()" class="fixed bottom-32 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
 
     <!-- 記帳表單 -->
     <div v-if="showExpenseForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" @click.self="showExpenseForm = false">
