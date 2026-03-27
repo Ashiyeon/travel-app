@@ -109,7 +109,7 @@ defineExpose({ loadData: loadActivitiesData, activities })
                 :class="{ 'cursor-default': !props.isEditMode, 'hover:border-stone-300': props.isEditMode }"
                 class="bg-white p-5 rounded-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] border border-white ring-1 ring-stone-200 flex gap-8 transition-all relative group mb-4">
                 
-                <!-- 左側時間與飛行航線 (Option B: Typography-focused + Monospaced) -->
+                <!-- 左側時間與飛行航線 -->
                 <div class="flex flex-col items-center w-20 relative pt-1">
                     <div class="text-[#283618] font-mono text-xl font-black tracking-tight text-center leading-none drop-shadow-sm">
                         {{ act.start_time || '--:--' }}
@@ -130,11 +130,11 @@ defineExpose({ loadData: loadActivitiesData, activities })
                     </div>
                 </div>
 
-                <div class="flex-1 pt-1 pl-2">
+                <div class="flex-1 pt-1 pl-2 min-w-0">
                     <div class="flex items-center gap-2 mb-2">
-                        <h3 class="font-black text-lg text-[#283618] tracking-tight">{{ act.title }}</h3>
+                        <h3 class="font-black text-lg text-[#283618] tracking-tight break-all">{{ act.title }}</h3>
                     </div>
-                    <p class="text-stone-500 text-sm leading-relaxed mb-3 line-clamp-3">{{ act.description }}</p>
+                    <p class="text-stone-500 text-sm leading-relaxed mb-3 break-all whitespace-pre-wrap">{{ act.description }}</p>
                     
                     <div class="flex flex-wrap gap-2">
                         <a v-if="act.map_url" :href="act.map_url" target="_blank" @click.stop class="inline-flex items-center gap-1.5 bg-[#E9EDC9]/30 text-[#283618] text-[11px] px-3 py-1.5 rounded-lg font-bold hover:bg-[#283618] hover:text-white transition-all shadow-sm border border-[#E9EDC9]">
@@ -154,7 +154,7 @@ defineExpose({ loadData: loadActivitiesData, activities })
         </template>
     </div>
 
-    <button v-if="props.isEditMode" @click="openActivityForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-20 transition hover:scale-110 active:scale-95">+</button>
+    <button v-if="props.isEditMode" @click="openActivityForm()" class="fixed bottom-24 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-20 transition hover:scale-110 active:scale-95">+</button>
 
     <!-- 行程表單 -->
     <div v-if="showActivityForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showActivityForm = false">

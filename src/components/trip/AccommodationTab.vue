@@ -161,17 +161,17 @@ defineExpose({ loadData: loadAccommodationData })
                 <div class="p-5">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 mb-6 text-sm">
                         <div class="flex gap-3">
-                            <div class="text-[#BC4749] mt-0.5 text-lg">📍</div>
-                            <div class="flex-1">
+                            <div class="text-[#BC4749] mt-0.5 text-lg shrink-0">📍</div>
+                            <div class="flex-1 min-w-0">
                                 <div class="text-stone-400 text-xs mb-0.5">地址</div>
-                                <div class="font-medium text-stone-800">{{ item.address }}</div>
+                                <div class="font-medium text-stone-800 break-all">{{ item.address }}</div>
                             </div>
                         </div>
                         <div class="flex gap-3">
-                            <div class="text-[#606C38] mt-0.5 text-lg">🚇</div>
-                            <div class="flex-1">
+                            <div class="text-[#606C38] mt-0.5 text-lg shrink-0">🚇</div>
+                            <div class="flex-1 min-w-0">
                                 <div class="text-stone-400 text-xs mb-0.5">最近車站</div>
-                                <div class="font-medium text-stone-800">{{ item.station || '未設定' }}</div>
+                                <div class="font-medium text-stone-800 break-all">{{ item.station || '未設定' }}</div>
                             </div>
                         </div>
                         <div class="flex gap-3">
@@ -212,7 +212,7 @@ defineExpose({ loadData: loadAccommodationData })
         </div>
     </div>
     
-    <button v-if="props.isEditMode" @click="openAccEdit()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+    <button v-if="props.isEditMode" @click="openAccEdit()" class="fixed bottom-24 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
 
     <!-- 住宿表單 -->
     <div v-if="showAccForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" @click.self="showAccForm = false">
@@ -275,7 +275,7 @@ defineExpose({ loadData: loadAccommodationData })
                 <div><label class="text-xs text-stone-500">Google Map URL</label><input v-model="accForm.google_map_url" class="w-full border border-stone-300 bg-white rounded px-2 py-2 text-[#606C38] focus:outline-none focus:border-[#606C38]" /></div>
                 <div class="bg-stone-50 p-3 rounded border border-stone-200">
                     <label class="text-xs font-bold mb-2 block text-stone-700">交通步驟</label>
-                    <div v-for="(step, idx) in accForm.transportation" :key="idx" class="flex gap-2 mb-2"><span class="w-6 h-6 flex items-center justify-center bg-white border border-stone-300 rounded-full text-xs mt-2 text-[#606C38] font-bold">{{ Number(idx)+1 }}</span><textarea v-model="step.text" class="flex-1 bg-white border border-stone-300 rounded px-2 py-1 h-16 resize-none focus:outline-none focus:border-[#606C38]"></textarea><button @click="removeTransportStep(idx)" class="text-[#BC4749] self-center">×</button></div>
+                    <div v-for="(step, idx) in accForm.transportation" :key="idx" class="flex gap-2 mb-2"><span class="w-6 h-6 flex items-center justify-center bg-white border border-stone-300 rounded-full text-xs mt-2 text-[#606C38] font-bold">{{ Number(idx)+1 }}</span><textarea v-model="step.text" class="flex-1 bg-white border border-stone-300 rounded px-2 py-1 h-16 resize-none focus:outline-none focus:border-[#606C38] break-all"></textarea><button @click="removeTransportStep(idx)" class="text-[#BC4749] self-center">×</button></div>
                     <button @click="addTransportStep" class="w-full py-2 border border-dashed border-stone-300 rounded text-xs text-stone-500 hover:bg-stone-100">+ 步驟</button>
                 </div>
                 

@@ -107,7 +107,7 @@
 </script>
   
 <template>
-  <div class="min-h-screen bg-[#FDFCF8] pb-24 font-sans text-stone-700">
+  <div class="min-h-screen bg-[#FDFCF8] pb-32 font-sans text-stone-700">
     <!-- 返回列表 -->
     <div class="px-4 py-4 flex items-center justify-between">
         <button @click="goBack" class="flex items-center gap-1 text-[#606C38] font-bold hover:text-[#283618] transition">
@@ -164,8 +164,8 @@
       </div>
     </div>
 
-    <!-- 頂部功能導覽 -->
-    <nav class="bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-white/50 mb-6 mx-4 flex justify-between px-2 py-2 z-20 sticky top-4">
+    <!-- 底部功能導覽 (LINE 樣式) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 flex justify-between px-6 py-2 z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
       <button class="tab" :class="{ active: activeTab==='itinerary' }" @click="activeTab='itinerary'"><div class="icon">🗓️</div><div class="label">行程</div></button>
       <button class="tab" :class="{ active: activeTab==='attractions' }" @click="activeTab='attractions'"><div class="icon">📍</div><div class="label">景點</div></button>
       <button class="tab" :class="{ active: activeTab==='accommodation' }" @click="activeTab='accommodation'"><div class="icon">🛏️</div><div class="label">住宿</div></button>
@@ -219,7 +219,7 @@
     />
 
     <!-- 參與者管理 Modal -->
-    <div v-if="showMembersModal" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4 backdrop-blur-[2px]" @click.self="showMembersModal = false">
+    <div v-if="showMembersModal" class="fixed inset-0 bg-[#283618]/60 z-[60] flex items-center justify-center p-4 backdrop-blur-[2px]" @click.self="showMembersModal = false">
         <div class="bg-[#FDFCF8] w-full max-w-md rounded-2xl p-6 shadow-2xl">
             <div class="flex justify-between mb-4 items-center border-b border-stone-100 pb-3">
                 <h3 class="font-bold text-lg text-[#283618] tracking-wide flex items-center gap-2">👥 參與者管理</h3>
@@ -265,5 +265,5 @@
 .tab { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; background:transparent; border:none; padding:6px 8px; border-radius:12px; color:#a8a29e; cursor: pointer; transition: all 0.2s; }
 .tab .icon { font-size:18px; margin-bottom: 2px; }
 .tab .label { font-size:12px; font-weight: 500; }
-.tab.active { background: #E9EDC9; color:#283618; box-shadow:0 1px 2px rgba(0,0,0,0.05); transform: translateY(-1px); }
+.tab.active { background: #E9EDC9; color:#283618; box-shadow:0 1px 2px rgba(0,0,0,0.05); }
 </style>

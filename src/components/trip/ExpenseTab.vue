@@ -459,15 +459,14 @@ defineExpose({ loadData: loadExpensesData })
             @click="props.isEditMode ? openExpenseForm(expense) : null" 
             :class="{ 'cursor-default': !props.isEditMode, 'hover:shadow-md': props.isEditMode }"
             class="bg-white p-4 rounded-xl shadow-sm border border-stone-100 flex justify-between items-center transition-shadow">
-            <div class="flex-1 flex items-center gap-4">
-                <span class="text-2xl">{{ expenseCategories.find(c => c.name === expense.category)?.icon || '📍' }}</span>
-                <div class="flex-1">
-                    <p class="font-bold text-stone-800">{{ expense.title }}</p>
-                    <p class="text-xs text-stone-500">{{ expense.expense_date }} · {{ expense.category }} · {{ expense.payment_method }}</p>
-                    <p v-if="expense.note" class="text-xs text-stone-400 mt-1">{{ expense.note }}</p>
-                    <span class="font-bold text-stone-600 text-xs">付款人:{{ expense.paid_by }}</span> 
-                    <p v-if="expense.split_with && expense.split_with.length > 0" class="text-xs text-stone-400 mt-1">分擔: {{ expense.split_with.join(', ') }}</p>
-                </div>
+            <div class="flex-1 flex items-center gap-4 min-w-0">
+                <span class="text-2xl flex-shrink-0">{{ expenseCategories.find(c => c.name === expense.category)?.icon || '📍' }}</span>
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-stone-800 break-all">{{ expense.title }}</p>
+                    <p class="text-xs text-stone-500 truncate">{{ expense.expense_date }} · {{ expense.category }} · {{ expense.payment_method }}</p>
+                    <p v-if="expense.note" class="text-xs text-stone-400 mt-1 break-all">{{ expense.note }}</p>
+                    <span class="font-bold text-stone-600 text-xs break-all">付款人:{{ expense.paid_by }}</span>
+                    <p v-if="expense.split_with && expense.split_with.length > 0" class="text-xs text-stone-400 mt-1 break-all">分擔: {{ expense.split_with.join(', ') }}</p>                </div>
             </div>
             <div class="text-right">
                 <p class="text-lg font-bold text-[#BC4749]">{{ getCurrencySymbol(expense.currency) }} {{ expense.amount_original }}</p>
@@ -516,7 +515,7 @@ defineExpose({ loadData: loadExpensesData })
         </div>
     </div>
 
-    <button v-if="props.isEditMode" @click="openExpenseForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+    <button v-if="props.isEditMode" @click="openExpenseForm()" class="fixed bottom-24 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
 
     <!-- 記帳表單 -->
     <div v-if="showExpenseForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" @click.self="showExpenseForm = false">
@@ -609,7 +608,7 @@ defineExpose({ loadData: loadExpensesData })
                 </div>
                 <div>
                     <label class="text-xs text-stone-500 font-bold mb-1 block">備註 (可選)</label>
-                    <textarea v-model="expenseForm.note" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 h-12 resize-none text-sm focus:outline-none focus:border-[#606C38]"></textarea>
+                    <textarea v-model="expenseForm.note" class="w-full border border-stone-300 bg-white rounded-lg px-3 py-2 h-12 resize-none text-sm focus:outline-none focus:border-[#606C38] break-all"></textarea>
                 </div>
                 <div class="flex gap-3 mt-6 pt-2 border-t border-stone-100">
                     <button v-if="isEditingExpense" @click="handleDeleteExpense" class="bg-red-50 text-[#BC4749] px-4 py-3 rounded-xl font-bold text-sm">刪除</button>

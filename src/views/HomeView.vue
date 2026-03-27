@@ -221,8 +221,7 @@ function goToDetail(id: number | string) {
              
           <div class="flex-1 p-5 relative">
               <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#D4A373] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <h2 class="text-lg font-bold text-[#283618] group-hover:text-[#606C38] transition-colors tracking-wide">{{ trip.name }}</h2>
-              <p v-if="trip.subtitle" class="text-xs text-stone-500 font-medium mt-0.5">{{ trip.subtitle }}</p>
+              <h2 class="text-lg font-bold text-[#283618] group-hover:text-[#606C38] transition-colors tracking-wide break-all">{{ trip.name }}</h2>              <p v-if="trip.subtitle" class="text-xs text-stone-500 font-medium mt-0.5">{{ trip.subtitle }}</p>
               <div class="flex items-center gap-1 mt-2 text-xs text-stone-400 font-medium font-mono">
                   <span>📅</span>
                   <span>{{ displayTripDates(trip) || '尚未設定日期' }}</span>

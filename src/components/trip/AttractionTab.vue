@@ -151,9 +151,9 @@ defineExpose({ loadData: loadAttractionsData, attractions })
                     </ul>
                 </div>
                 <div class="grid grid-cols-1 gap-y-3 text-sm text-stone-600 mb-6">
-                    <div class="flex items-start gap-3" v-if="attr.transport_info"><div class="w-5 text-center text-lg">🚇</div><div class="flex-1 border-b border-stone-100 pb-2">{{ attr.transport_info }}</div></div>
-                    <div class="flex items-start gap-3" v-if="attr.opening_hours"><div class="w-5 text-center text-lg">⏰</div><div class="flex-1 border-b border-stone-100 pb-2">{{ attr.opening_hours }}</div></div>
-                    <div class="flex items-start gap-3" v-if="attr.ticket_price"><div class="w-5 text-center text-lg">🎫</div><div class="flex-1">{{ attr.ticket_price }}</div></div>
+                    <div class="flex items-start gap-3" v-if="attr.transport_info"><div class="w-5 text-center text-lg shrink-0">🚇</div><div class="flex-1 border-b border-stone-100 pb-2 break-all">{{ attr.transport_info }}</div></div>
+                    <div class="flex items-start gap-3" v-if="attr.opening_hours"><div class="w-5 text-center text-lg shrink-0">⏰</div><div class="flex-1 border-b border-stone-100 pb-2 break-all">{{ attr.opening_hours }}</div></div>
+                    <div class="flex items-start gap-3" v-if="attr.ticket_price"><div class="w-5 text-center text-lg shrink-0">🎫</div><div class="flex-1 break-all">{{ attr.ticket_price }}</div></div>
                 </div>
                 <a v-if="attr.map_url" :href="attr.map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-md active:scale-[0.98] transition-all flex justify-center items-center gap-2"><span>🗺️</span> Google 地圖導航</a>
             </div>
@@ -163,7 +163,7 @@ defineExpose({ loadData: loadAttractionsData, attractions })
             <button v-if="props.isEditMode" @click="openAttractionForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個景點</button>
         </div>
     </div>
-    <button v-if="props.isEditMode" @click="openAttractionForm()" class="fixed bottom-8 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+    <button v-if="props.isEditMode" @click="openAttractionForm()" class="fixed bottom-24 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
 
     <!-- 景點表單 -->
     <div v-if="showAttractionForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showAttractionForm = false">
