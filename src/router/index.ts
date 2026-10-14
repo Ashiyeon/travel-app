@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import TripDetailView from '../views/TripDetailView.vue'
+import SharedTripView from '../views/SharedTripView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -16,6 +17,12 @@ const router = createRouter({
       name: 'trip-detail',
       component: TripDetailView,
       props: true
+    },
+    // 唯讀分享頁：不需登入，必須放在 catch-all 之前
+    {
+      path: '/share/:token',
+      name: 'shared-trip',
+      component: SharedTripView
     },
     // 捕捉所有未定義的路徑，直接顯示 HomeView
     // 這可以解決 Supabase 登入後 Hash 內包含 access_token 導致路由匹配失敗的問題

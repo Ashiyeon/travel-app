@@ -122,89 +122,91 @@ defineExpose({ loadData: loadAttractionsData, attractions })
 <template>
   <section class="px-4 pb-20">
     <div class="flex justify-between items-center mb-4 pl-1">
-        <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2"> 
+        <h2 class="font-display text-xl font-bold text-ink flex items-center gap-2">
             <span class="text-xl">🌅</span> 景點詳細介紹
         </h2>
     </div>
 
-    <div class="grid gap-6">
-        <div v-for="attr in filteredAttractions" :key="attr.id" class="bg-white rounded-xl shadow-md overflow-hidden border border-stone-100 relative group hover:shadow-lg transition-all">
-            <button v-if="props.isEditMode" @click="openAttractionForm(attr)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">✏️</button>
-            <div class="bg-gradient-to-br from-[#D4A373] to-[#B08968] p-6 text-white pt-10 pb-8 relative">
-                <div v-if="attr.location_tag" class="absolute top-6 left-6 bg-[#FEFAE0] text-[#9C6644] text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+    <div class="grid gap-6 stagger">
+        <div v-for="(attr, cardIdx) in filteredAttractions" :key="attr.id" :style="{ '--i': cardIdx }" class="card overflow-hidden relative group">
+            <button v-if="props.isEditMode" @click="openAttractionForm(attr)" class="btn-icon absolute top-3 right-3 z-10 backdrop-blur-sm">✏️</button>
+            <div class="relative overflow-hidden p-6 pt-10 pb-8">
+                <div class="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-flare"></div>
+                <div v-if="attr.location_tag" class="tag relative !text-flare !border-flare/30 !bg-flare/10 font-mono uppercase tracking-wider mb-3">
                     {{ attr.location_tag }}
                 </div>
-                <h3 class="text-2xl font-bold mb-1 mt-4 text-white shadow-sm">{{ attr.title }}</h3>
-                <p class="text-sm text-[#FEFAE0]/90 font-medium">{{ attr.subtitle }}</p>
-            </div>            
+                <h3 class="relative font-display text-2xl font-bold mb-1 text-ink">{{ attr.title }}</h3>
+                <p class="relative text-sm text-ink-soft font-medium">{{ attr.subtitle }}</p>
+            </div>
+            <div class="hairline"></div>
             <div class="p-5">
-                <p class="text-stone-600 text-sm leading-relaxed mb-5 text-justify">{{ attr.description || '暫無描述' }}</p>
-                <div class="bg-[#FEFAE0] rounded-lg p-4 mb-5 border border-[#E9EDC9]" v-if="attr.highlights || attr.must_eat">
-                    <h4 class="text-sm font-bold text-[#A98467] mb-2 flex items-center gap-1"><span>✨</span> 必訪亮點 </h4>
+                <p class="text-ink-soft text-sm leading-relaxed mb-5 text-justify">{{ attr.description || '暫無描述' }}</p>
+                <div class="rounded-2xl p-4 mb-5 border border-ink/10 bg-paper-deep/50" v-if="attr.highlights || attr.must_eat">
+                    <h4 class="eyebrow !text-amber mb-3 flex items-center gap-1"><span>✨</span> 必訪亮點 </h4>
                     <ul class="space-y-2">
-                        <li v-for="(line, idx) in parseLines(attr.highlights)" :key="'h'+idx" class="flex items-start gap-2 text-sm text-stone-700">
-                            <span class="mt-0.5 text-xs text-[#A98467]">●</span><span>{{ line }}</span>
+                        <li v-for="(line, idx) in parseLines(attr.highlights)" :key="'h'+idx" class="flex items-start gap-2 text-sm text-ink">
+                            <span class="mt-0.5 text-xs text-flare">●</span><span>{{ line }}</span>
                         </li>
-                        <li v-for="(line, idx) in parseLines(attr.must_eat)" :key="'m'+idx" class="flex items-start gap-2 text-sm text-stone-700">
-                            <span class="mt-0.5 text-xs text-[#A98467]">🍽️</span><span>{{ line }}</span>
+                        <li v-for="(line, idx) in parseLines(attr.must_eat)" :key="'m'+idx" class="flex items-start gap-2 text-sm text-ink">
+                            <span class="mt-0.5 text-xs text-flare">🍽️</span><span>{{ line }}</span>
                         </li>
                     </ul>
                 </div>
-                <div class="grid grid-cols-1 gap-y-3 text-sm text-stone-600 mb-6">
-                    <div class="flex items-start gap-3" v-if="attr.transport_info"><div class="w-5 text-center text-lg shrink-0">🚇</div><div class="flex-1 border-b border-stone-100 pb-2 break-all">{{ attr.transport_info }}</div></div>
-                    <div class="flex items-start gap-3" v-if="attr.opening_hours"><div class="w-5 text-center text-lg shrink-0">⏰</div><div class="flex-1 border-b border-stone-100 pb-2 break-all">{{ attr.opening_hours }}</div></div>
+                <div class="grid grid-cols-1 gap-y-3 text-sm text-muted mb-6">
+                    <div class="flex items-start gap-3" v-if="attr.transport_info"><div class="w-5 text-center text-lg shrink-0">🚇</div><div class="flex-1 border-b border-ink/10 pb-2 break-all">{{ attr.transport_info }}</div></div>
+                    <div class="flex items-start gap-3" v-if="attr.opening_hours"><div class="w-5 text-center text-lg shrink-0">⏰</div><div class="flex-1 border-b border-ink/10 pb-2 break-all font-mono">{{ attr.opening_hours }}</div></div>
                     <div class="flex items-start gap-3" v-if="attr.ticket_price"><div class="w-5 text-center text-lg shrink-0">🎫</div><div class="flex-1 break-all">{{ attr.ticket_price }}</div></div>
                 </div>
-                <a v-if="attr.map_url" :href="attr.map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-md active:scale-[0.98] transition-all flex justify-center items-center gap-2"><span>🗺️</span> Google 地圖導航</a>
+                <a v-if="attr.map_url" :href="attr.map_url" target="_blank" class="btn-primary w-full !py-3"><span>🗺️</span> Google 地圖導航</a>
             </div>
         </div>
-        <div v-if="filteredAttractions.length === 0" class="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl bg-stone-50">
-            <p class="text-stone-400 mb-2">{{ props.isEditMode ? '這一天還沒有安排景點' : '暫無景點介紹' }}</p>
-            <button v-if="props.isEditMode" @click="openAttractionForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個景點</button>
+        <div v-if="filteredAttractions.length === 0" class="card py-12 text-center !border-dashed !border-ink/15">
+            <p class="text-muted mb-3">{{ props.isEditMode ? '這一天還沒有安排景點' : '暫無景點介紹' }}</p>
+            <button v-if="props.isEditMode" @click="openAttractionForm()" class="btn-primary">新增第一個景點</button>
         </div>
     </div>
-    <button v-if="props.isEditMode" @click="openAttractionForm()" class="fixed bottom-32 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+    <button v-if="props.isEditMode" @click="openAttractionForm()" class="btn-primary fixed bottom-28 right-6 !h-14 !w-14 !rounded-full !p-0 !pb-1 !text-3xl z-30 hover:scale-110" aria-label="新增景點">+</button>
 
     <!-- 景點表單 -->
-    <div v-if="showAttractionForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showAttractionForm = false">
-        <div class="bg-[#FDFCF8] w-full max-w-md rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between mb-4 items-center">
-                <h3 class="font-bold text-lg text-[#283618]">{{ isEditingAttraction ? '編輯景點' : '新增景點' }}</h3>
-                <button @click="showAttractionForm=false" class="text-2xl text-stone-400 hover:text-stone-600">×</button>
+    <div v-if="showAttractionForm" class="modal-backdrop" @click.self="showAttractionForm = false">
+        <div class="modal-panel">
+            <div class="flex justify-between mb-5 items-center">
+                <h3 class="font-display font-bold text-xl text-ink">{{ isEditingAttraction ? '編輯景點' : '新增景點' }}</h3>
+                <button @click="showAttractionForm=false" class="btn-icon" aria-label="關閉">✕</button>
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="text-xs text-stone-500 mb-1 block">安排日期 (選填)</label>
-                    <input v-model="attractionForm.date" type="date" class="w-full appearance-none border border-stone-300 bg-white rounded-lg px-3 py-2 m-0 focus:outline-none focus:border-[#606C38] min-h-[42px]" />
+                    <label class="field-label">安排日期 (選填)</label>
+                    <input v-model="attractionForm.date" type="date" class="field appearance-none m-0 min-h-[46px] font-mono" />
                 </div>
                 <div class="flex gap-2">
                     <div class="w-1/3">
-                        <label class="text-xs text-stone-500 mb-1 block">地區標籤</label>
-                        <input v-model="attractionForm.location_tag" class="w-full border border-stone-300 p-2 rounded-lg bg-white text-center focus:outline-none focus:border-[#606C38]" />
+                        <label class="field-label">地區標籤</label>
+                        <input v-model="attractionForm.location_tag" class="field text-center" />
                     </div>
                     <div class="flex-1">
-                        <label class="text-xs text-stone-500 mb-1 block">景點名稱</label>
-                        <input v-model="attractionForm.title" class="w-full border border-stone-300 p-2 rounded-lg bg-white font-bold focus:outline-none focus:border-[#606C38]" />
+                        <label class="field-label">景點名稱</label>
+                        <input v-model="attractionForm.title" class="field font-bold" />
                     </div>
                 </div>
                 <div>
-                    <label class="text-xs text-stone-500 mb-1 block">副標題</label>
-                    <input v-model="attractionForm.subtitle" class="w-full border border-stone-300 p-2 rounded-lg bg-white focus:outline-none focus:border-[#606C38]" />
+                    <label class="field-label">副標題</label>
+                    <input v-model="attractionForm.subtitle" class="field" />
                 </div>
-                <div><label class="text-xs text-stone-500 mb-1 block">介紹描述</label><textarea v-model="attractionForm.description" class="w-full border border-stone-300 p-2 rounded-lg bg-white h-24 text-sm focus:outline-none focus:border-[#606C38]"></textarea></div>
-                <div class="bg-[#FEFAE0] p-3 rounded-lg border border-[#E9EDC9]">
-                    <label class="text-xs font-bold text-[#D4A373] mb-1 block">✨ 必訪亮點 (一行一個)</label><textarea v-model="attractionForm.highlights" class="w-full border border-stone-200 p-2 rounded-lg bg-white h-20 text-sm focus:outline-none focus:border-[#D4A373]"></textarea>
-                    <label class="text-xs font-bold text-[#D4A373] mt-2 mb-1 block">🍽️ 必吃美食 (一行一個，可選)</label><textarea v-model="attractionForm.must_eat" class="w-full border border-stone-200 p-2 rounded-lg bg-white h-16 text-sm focus:outline-none focus:border-[#D4A373]"></textarea>
+                <div><label class="field-label">介紹描述</label><textarea v-model="attractionForm.description" class="field h-24"></textarea></div>
+                <div class="rounded-2xl border border-ink/10 bg-paper-deep/50 p-3">
+                    <label class="field-label !text-amber">✨ 必訪亮點 (一行一個)</label><textarea v-model="attractionForm.highlights" class="field h-20"></textarea>
+                    <label class="field-label !text-amber mt-3">🍽️ 必吃美食 (一行一個，可選)</label><textarea v-model="attractionForm.must_eat" class="field h-16"></textarea>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-xs text-stone-500 mb-1 block">🚇 交通方式</label><input v-model="attractionForm.transport_info" class="w-full border border-stone-300 p-2 rounded-lg bg-white text-sm focus:outline-none focus:border-[#606C38]" /></div>
-                    <div><label class="text-xs text-stone-500 mb-1 block">🎫 門票/費用</label><input v-model="attractionForm.ticket_price" class="w-full border border-stone-300 p-2 rounded-lg bg-white text-sm focus:outline-none focus:border-[#606C38]" /></div>
-                    <div class="col-span-2"><label class="text-xs text-stone-500 mb-1 block">⏰ 營業時間</label><input v-model="attractionForm.opening_hours" class="w-full border border-stone-300 p-2 rounded-lg bg-white text-sm focus:outline-none focus:border-[#606C38]" /></div>
+                    <div><label class="field-label">🚇 交通方式</label><input v-model="attractionForm.transport_info" class="field" /></div>
+                    <div><label class="field-label">🎫 門票/費用</label><input v-model="attractionForm.ticket_price" class="field" /></div>
+                    <div class="col-span-2"><label class="field-label">⏰ 營業時間</label><input v-model="attractionForm.opening_hours" class="field" /></div>
                 </div>
-                <div><label class="text-xs text-stone-500 mb-1 block">📍 Google Map URL</label><input v-model="attractionForm.map_url" class="w-full border border-stone-300 p-2 rounded-lg bg-white text-[#606C38] text-xs focus:outline-none focus:border-[#606C38]" /></div>
-                <div class="flex gap-3 mt-6 pt-2 border-t border-stone-100">
-                    <button v-if="isEditingAttraction" @click="handleDeleteAttraction" class="bg-red-50 text-[#BC4749] px-4 py-3 rounded-xl font-bold text-sm">刪除</button>
-                    <button @click="handleSaveAttraction" class="bg-[#283618] text-white flex-1 py-3 rounded-xl font-bold shadow-md active:scale-95 transition hover:bg-[#3A5A40]">儲存設定</button>
+                <div><label class="field-label">📍 Google Map URL</label><input v-model="attractionForm.map_url" class="field !text-xs !text-flare" /></div>
+                <div class="flex gap-3 mt-6 pt-4 border-t border-ink/10">
+                    <button v-if="isEditingAttraction" @click="handleDeleteAttraction" class="btn-danger">刪除</button>
+                    <button @click="handleSaveAttraction" class="btn-primary flex-1">儲存設定</button>
                 </div>
             </div>
         </div>

@@ -1,1 +1,227 @@
 @import "tailwindcss";
+
+/* =========================================================
+   Design tokens — "Travel Journal" warm editorial theme
+   Paper background, ink text, postcard/stamp accents.
+   ========================================================= */
+@theme {
+  --font-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-display: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Paper surfaces */
+  --color-paper: #F5EFE4;
+  --color-paper-deep: #EDE4D3;
+  --color-card: #FBF8F2;
+
+  /* Ink text (dark → light) */
+  --color-ink: #1E1A16;
+  --color-ink-soft: #4A4239;
+  --color-muted: #857A6C;
+  --color-faint: #B3A898;
+
+  /* Accents */
+  --color-flare: #C2553A;   /* terracotta — primary */
+  --color-amber: #D69A3C;   /* mustard */
+  --color-aurora: #2E6E8E;  /* sea blue */
+  --color-lagoon: #5E8C5A;  /* olive green — positive / receive */
+  --color-alert: #B83A3A;   /* stamp red — delete / owe */
+
+  --animate-rise: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade: fade 0.4s ease both;
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+/* =========================================================
+   Base
+   ========================================================= */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  html {
+    background: var(--color-paper);
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-paper text-ink-soft font-sans antialiased;
+    min-height: 100dvh;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-amber) 45%, transparent);
+    color: var(--color-ink);
+  }
+  input, select, textarea, button {
+    font: inherit;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    opacity: 0.55;
+    cursor: pointer;
+  }
+}
+
+/* =========================================================
+   Components — reuse these utilities in every view/tab
+   ========================================================= */
+
+/* Paper card */
+@utility card {
+  @apply relative rounded-2xl border border-ink/10 bg-card;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 12px 30px -22px rgb(60 40 20 / 0.45);
+}
+@utility card-raised {
+  @apply relative rounded-3xl border border-ink/10 bg-card;
+  box-shadow: 0 30px 70px -30px rgb(60 40 20 / 0.5);
+}
+/* Interactive card: lifts on hover */
+@utility card-hover {
+  @apply transition-all duration-500 ease-out hover:-translate-y-0.5 hover:border-ink/20;
+  &:hover {
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 22px 40px -24px rgb(60 40 20 / 0.55);
+  }
+}
+
+/* Accent text for headline numbers */
+@utility text-gradient {
+  @apply text-flare;
+}
+
+/* Small label above titles */
+@utility eyebrow {
+  @apply text-[11px] font-medium tracking-[0.12em] text-muted;
+}
+
+/* Buttons */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold whitespace-nowrap transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer;
+}
+@utility btn-primary {
+  @apply btn bg-flare text-card hover:bg-[#A9452D];
+  box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--color-flare) 80%, transparent);
+}
+@utility btn-ghost {
+  @apply btn border border-ink/15 bg-card text-ink-soft hover:border-ink/40 hover:text-ink;
+}
+@utility btn-danger {
+  @apply btn border border-alert/30 bg-alert/5 text-alert hover:bg-alert/10;
+}
+@utility btn-icon {
+  @apply inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 bg-card text-ink-soft transition-all duration-300 hover:border-ink/40 hover:text-ink active:scale-90 cursor-pointer;
+}
+
+/* Form fields */
+@utility field {
+  @apply w-full rounded-xl border border-ink/15 bg-card px-4 py-3 text-sm text-ink outline-none transition-all duration-300 placeholder:text-faint focus:border-flare/60;
+  &:focus {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-flare) 12%, transparent);
+  }
+}
+@utility field-label {
+  @apply mb-2 block text-xs font-bold tracking-wide text-muted;
+}
+
+/* Pills / chips */
+@utility chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-card px-4 py-2 text-sm font-medium whitespace-nowrap text-ink-soft transition-all duration-300 hover:border-ink/40 hover:text-ink cursor-pointer;
+}
+@utility chip-active {
+  @apply border-ink bg-ink text-card hover:text-card;
+}
+@utility tag {
+  @apply inline-flex items-center gap-1 rounded-full border border-ink/15 px-2.5 py-0.5 text-[11px] font-medium text-ink-soft;
+}
+
+/* Postmark stamp (circle with dashed inner ring) */
+@utility stamp {
+  @apply relative inline-flex shrink-0 flex-col items-center justify-center rounded-full border-2 border-flare/70 text-flare;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 9999px;
+    border: 1px dashed color-mix(in srgb, var(--color-flare) 55%, transparent);
+  }
+}
+
+/* Modal */
+@utility modal-backdrop {
+  @apply fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-0 backdrop-blur-sm animate-fade sm:items-center sm:p-4;
+}
+@utility modal-panel {
+  @apply card-raised w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-b-none p-6 animate-rise sm:rounded-3xl;
+}
+
+/* Hairline rule */
+@utility hairline {
+  @apply h-px w-full bg-ink/12;
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/* =========================================================
+   Paper texture background (rendered once in App.vue)
+   ========================================================= */
+.paper-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgb(214 154 60 / 0.16), transparent 55%),
+    radial-gradient(ellipse at 0% 100%, rgb(46 110 142 / 0.10), transparent 55%);
+}
+.paper-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* no mix-blend-mode: multiply on a full-screen fixed layer stalls compositing */
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Staggered entrance helper: set style="--i: n" on children.
+   backwards (not both) so hover transforms still apply after entrance */
+.stagger > * {
+  animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* Skeleton shimmer */
+.shimmer { animation: shimmer 1.6s ease-in-out infinite; transform: translateX(-100%); }
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+
+/* Plane gliding along a route line */
+.plane-glide { animation: glide 3.2s cubic-bezier(0.45, 0, 0.25, 1) infinite alternate; }
+@keyframes glide {
+  from { left: 0%; }
+  to { left: calc(100% - 1rem); }
+}
+
+/* Route transition */
+.page-enter-active, .page-leave-active {
+  transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.page-enter-from { opacity: 0; transform: translateY(12px); }
+.page-leave-to { opacity: 0; transform: translateY(-6px); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

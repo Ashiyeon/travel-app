@@ -98,31 +98,33 @@ defineExpose({ loadData: loadActivitiesData, activities })
 <template>
   <section>
     <div class="p-4 space-y-4">
-        <div v-if="activities.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300">
-            <p class="text-stone-400 mb-2">{{ props.isEditMode ? '這裡空空如也' : '暫無行程' }}</p>
-            <button v-if="props.isEditMode" @click="openActivityForm()" class="text-[#BC4749] font-bold hover:underline">新增第一個行程</button>
+        <div v-if="activities.length === 0" class="card py-12 text-center !border-dashed !border-ink/15">
+            <p class="text-muted mb-3">{{ props.isEditMode ? '這裡空空如也' : '暫無行程' }}</p>
+            <button v-if="props.isEditMode" @click="openActivityForm()" class="btn-primary">新增第一個行程</button>
         </div>
 
         <template v-else>
-            <div v-for="act in filteredActivities" :key="act.id" 
-                @click="props.isEditMode ? openActivityForm(act) : null" 
-                :class="{ 'cursor-default': !props.isEditMode, 'hover:border-stone-300': props.isEditMode }"
-                class="bg-white p-5 rounded-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] border border-white ring-1 ring-stone-200 flex gap-8 transition-all relative group mb-4">
-                
+            <div class="stagger space-y-4">
+            <div v-for="(act, idx) in filteredActivities" :key="act.id"
+                @click="props.isEditMode ? openActivityForm(act) : null"
+                :style="{ '--i': idx }"
+                :class="props.isEditMode ? 'cursor-pointer card-hover' : 'cursor-default'"
+                class="card p-5 flex gap-8 relative group">
+
                 <!-- 左側時間與飛行航線 -->
                 <div class="flex flex-col items-center w-20 relative pt-1">
-                    <div class="text-[#283618] font-mono text-xl font-bold tracking-normal text-center leading-none antialiased">
+                    <div class="text-ink font-mono text-xl font-bold tracking-normal text-center leading-none antialiased">
                         {{ act.start_time || '--:--' }}
                     </div>
                     <!-- 裝飾細線 -->
-                    <div class="w-8 h-[2px] bg-[#606C38]/40 mt-2.5 rounded-full"></div>
-                    <span class="text-[10px] text-stone-400 mt-2 font-bold uppercase tracking-tighter">{{ act.category }}</span>
-                    
+                    <div class="w-8 h-[2px] bg-flare mt-2.5 rounded-full"></div>
+                    <span class="eyebrow !text-[10px] mt-2 !tracking-[0.15em]">{{ act.category }}</span>
+
                     <!-- 航線路徑與圖標 -->
                     <div class="absolute -right-[23px] top-12 bottom-0 flex flex-col items-center">
-                        <div class="w-[2px] h-full bg-stone-300/50"></div>
+                        <div class="w-[2px] h-full bg-ink/10"></div>
                     </div>
-                    <div class="absolute -right-[35px] top-2.5 w-6 h-6 bg-[#FDFCF8] rounded-full flex items-center justify-center text-[12px] shadow-sm border border-stone-200 z-10">
+                    <div class="absolute -right-[35px] top-2.5 w-6 h-6 bg-paper-deep rounded-full flex items-center justify-center text-[12px] shadow-sm border border-ink/15 z-10">
                         <span v-if="act.category === '交通'">✈️</span>
                         <span v-else-if="act.category === '餐飲'">🍽️</span>
                         <span v-else-if="act.category === '住宿'">🏨</span>
@@ -132,46 +134,47 @@ defineExpose({ loadData: loadActivitiesData, activities })
 
                 <div class="flex-1 pt-1 pl-2 min-w-0">
                     <div class="flex items-center gap-2 mb-2">
-                        <h3 class="font-black text-lg text-[#283618] tracking-tight break-all">{{ act.title }}</h3>
+                        <h3 class="font-display font-bold text-lg text-ink tracking-tight break-all">{{ act.title }}</h3>
                     </div>
-                    <p class="text-stone-500 text-sm leading-relaxed mb-3 break-all whitespace-pre-wrap">{{ act.description }}</p>
-                    
+                    <p class="text-muted text-sm leading-relaxed mb-3 break-all whitespace-pre-wrap">{{ act.description }}</p>
+
                     <div class="flex flex-wrap gap-2">
-                        <a v-if="act.map_url" :href="act.map_url" target="_blank" @click.stop class="inline-flex items-center gap-1.5 bg-[#E9EDC9]/30 text-[#283618] text-[11px] px-3 py-1.5 rounded-lg font-bold hover:bg-[#283618] hover:text-white transition-all shadow-sm border border-[#E9EDC9]">
+                        <a v-if="act.map_url" :href="act.map_url" target="_blank" @click.stop class="tag !text-flare !border-flare/30 !bg-flare/10 font-mono uppercase tracking-wider hover:!bg-flare/20 transition-all">
                              VIEW ON MAP
                         </a>
                     </div>
                 </div>
-                <div v-if="props.isEditMode" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-stone-300">
+                <div v-if="props.isEditMode" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-faint">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                 </div>
             </div>
+            </div>
 
-            <div v-if="filteredActivities.length === 0" class="text-center py-20 text-stone-400">
+            <div v-if="filteredActivities.length === 0" class="text-center py-20 text-faint">
                 <p>這一天還沒有行程喔</p>
-                <button v-if="props.isEditMode" @click="openActivityForm()" class="text-[#BC4749] text-sm font-bold mt-2 hover:underline">+ 點此新增</button>
+                <button v-if="props.isEditMode" @click="openActivityForm()" class="text-flare text-sm font-bold mt-2 hover:underline">+ 點此新增</button>
             </div>
         </template>
     </div>
 
-    <button v-if="props.isEditMode" @click="openActivityForm()" class="fixed bottom-32 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-20 transition hover:scale-110 active:scale-95">+</button>
+    <button v-if="props.isEditMode" @click="openActivityForm()" class="btn-primary fixed bottom-28 right-6 !h-14 !w-14 !rounded-full !p-0 !pb-1 !text-3xl z-30 hover:scale-110" aria-label="新增行程">+</button>
 
     <!-- 行程表單 -->
-    <div v-if="showActivityForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-center justify-center p-4" @click.self="showActivityForm = false">
-        <div class="bg-[#FDFCF8] w-full max-w-md rounded-2xl p-6 shadow-2xl">
-            <div class="flex justify-between mb-4"><h3 class="font-bold text-lg text-[#283618]">{{ isEditingActivity ? '編輯行程' : '新增行程' }}</h3><button @click="showActivityForm=false" class="text-2xl text-stone-400">×</button></div>
+    <div v-if="showActivityForm" class="modal-backdrop" @click.self="showActivityForm = false">
+        <div class="modal-panel">
+            <div class="flex justify-between items-center mb-5"><h3 class="font-display font-bold text-xl text-ink">{{ isEditingActivity ? '編輯行程' : '新增行程' }}</h3><button @click="showActivityForm=false" class="btn-icon" aria-label="關閉">✕</button></div>
             <div class="space-y-3">
-                <input v-model="activityForm.date" type="date" class="w-full appearance-none m-0 border border-stone-300 px-3 py-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38] min-h-[42px]" />                
+                <input v-model="activityForm.date" type="date" class="field appearance-none m-0 min-h-[46px] font-mono" />
                 <div class="flex gap-2 mt-2">
-                    <input v-model="activityForm.start_time" placeholder="時間 (09:00)" class="w-1/3 border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]" />
-                    <select v-model="activityForm.category" class="flex-1 border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]"><option>景點</option><option>交通</option><option>餐飲</option><option>活動</option><option>住宿</option></select>
+                    <input v-model="activityForm.start_time" placeholder="時間 (09:00)" class="field w-1/3 font-mono" />
+                    <select v-model="activityForm.category" class="field flex-1"><option>景點</option><option>交通</option><option>餐飲</option><option>活動</option><option>住宿</option></select>
                 </div>
-                <input v-model="activityForm.title" placeholder="名稱" class="w-full border border-stone-300 p-2 rounded-xl bg-white focus:outline-none focus:border-[#606C38]" />
-                <input v-model="activityForm.map_url" placeholder="📍 Google Map 連結" class="w-full border border-stone-300 p-2 rounded-xl bg-white text-sm text-[#606C38] focus:outline-none focus:border-[#606C38]" />
-                <textarea v-model="activityForm.description" placeholder="備註" class="w-full border border-stone-300 p-2 rounded-xl bg-white h-24 focus:outline-none focus:border-[#606C38] resize-none break-all"></textarea>
+                <input v-model="activityForm.title" placeholder="名稱" class="field" />
+                <input v-model="activityForm.map_url" placeholder="📍 Google Map 連結" class="field !text-flare" />
+                <textarea v-model="activityForm.description" placeholder="備註" class="field h-24 resize-none break-all"></textarea>
                 <div class="flex gap-2 mt-2">
-                    <button v-if="isEditingActivity" @click="handleDeleteActivity" class="bg-red-50 text-[#BC4749] flex-1 py-2 rounded-xl">刪除</button>
-                    <button @click="handleSaveActivity" class="bg-[#283618] text-white flex-1 py-2 rounded-xl hover:bg-[#3A5A40]">確認</button>
+                    <button v-if="isEditingActivity" @click="handleDeleteActivity" class="btn-danger flex-1">刪除</button>
+                    <button @click="handleSaveActivity" class="btn-primary flex-1">確認</button>
                 </div>
             </div>
         </div>

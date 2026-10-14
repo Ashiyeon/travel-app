@@ -13,7 +13,10 @@ export default defineConfig({
       manifest: {
         name: '空姐叫我',
         //更改app名稱
-        short_name: '空姐叫我',        display: 'standalone',
+        short_name: '空姐叫我',
+        display: 'standalone',
+        theme_color: '#F5EFE4',
+        background_color: '#F5EFE4',
         start_url: '/travel-app/',
         scope: '/travel-app/',
         icons: [

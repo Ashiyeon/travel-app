@@ -120,168 +120,170 @@ const getStayDuration = (item: any) => (item.check_in_date && item.check_out_dat
 
 onMounted(loadAccommodationData)
 
-defineExpose({ loadData: loadAccommodationData })
+defineExpose({ loadData: loadAccommodationData, accommodations })
 </script>
 
 <template>
   <section class="px-4 pb-20">
     <div class="flex justify-between items-center mb-4 pl-1">
-        <h2 class="text-xl font-bold text-[#BC4749] flex items-center gap-2">
+        <h2 class="font-display text-xl font-bold text-ink flex items-center gap-2">
             <span class="text-2xl">🏨</span> 住宿資訊
         </h2>
-         <span class="text-xs text-stone-400" v-if="accommodations.length > 0">共 {{ accommodations.length }} 間</span>
+         <span class="eyebrow" v-if="accommodations.length > 0">共 {{ accommodations.length }} 間</span>
     </div>
 
-    <div v-if="accommodations.length === 0" class="text-center py-12 bg-white rounded-xl border border-dashed border-stone-300">
-        <p class="text-stone-400 mb-2">{{ props.isEditMode ? '這裡空空如也' : '暫無住宿資料' }}</p>
-        <button v-if="props.isEditMode" @click="openAccEdit()" class="text-[#BC4749] font-bold hover:underline">新增第一間住宿</button>
+    <div v-if="accommodations.length === 0" class="card py-12 text-center !border-dashed !border-ink/15">
+        <p class="text-muted mb-3">{{ props.isEditMode ? '這裡空空如也' : '暫無住宿資料' }}</p>
+        <button v-if="props.isEditMode" @click="openAccEdit()" class="btn-primary">新增第一間住宿</button>
     </div>
 
-    <div v-else class="space-y-8">
-        <div v-for="item in accommodations" :key="item.id">
-            <div class="bg-white rounded-xl shadow-md border border-stone-100 overflow-hidden relative group hover:shadow-lg transition-shadow">
-                
-                <button v-if="props.isEditMode" @click="openAccEdit(item)" class="absolute top-3 right-3 z-10 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full backdrop-blur-sm transition">
+    <div v-else class="space-y-8 stagger">
+        <div v-for="(item, cardIdx) in accommodations" :key="item.id" :style="{ '--i': cardIdx }">
+            <div class="card overflow-hidden relative group">
+
+                <button v-if="props.isEditMode" @click="openAccEdit(item)" class="btn-icon absolute top-3 right-3 z-10 backdrop-blur-sm">
                     ✏️
                 </button>
 
-                <div class="bg-[#6F4E37] text-white p-4">
-                    <div class="flex items-start gap-3">
-                        <div class="bg-white/20 p-2 rounded-lg text-2xl">🏠</div>
+                <div class="relative overflow-hidden p-5 pr-16">
+                    <div class="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-aurora"></div>
+                    <div class="relative flex items-start gap-3">
+                        <div class="rounded-2xl border border-ink/10 bg-paper-deep p-2 text-2xl">🏠</div>
                         <div>
-                            <h3 class="font-bold text-lg leading-tight">{{ item.name }}</h3>
-                            <div class="text-white/80 text-sm mt-1 flex items-center gap-2">
+                            <h3 class="font-display font-bold text-lg leading-tight text-ink">{{ item.name }}</h3>
+                            <div class="text-muted text-sm mt-1.5 flex flex-wrap items-center gap-2">
                                 <div class="flex items-center gap-1"><span>📅</span><span>{{ getDisplayCheckInDate(item) }} 入住</span></div>
-                                <span class="bg-white/20 text-[10px] px-2 py-0.5 rounded font-mono">{{ getStayDuration(item) }} 晚</span>
+                                <span class="tag !text-flare !border-flare/30 !bg-flare/10 font-mono">{{ getStayDuration(item) }} 晚</span>
                             </div>
                         </div>
                     </div>
                 </div>
+                <div class="hairline"></div>
 
                 <div class="p-5">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 mb-6 text-sm">
                         <div class="flex gap-3">
-                            <div class="text-[#BC4749] mt-0.5 text-lg shrink-0">📍</div>
+                            <div class="text-flare mt-0.5 text-lg shrink-0">📍</div>
                             <div class="flex-1 min-w-0">
-                                <div class="text-stone-400 text-xs mb-0.5">地址</div>
-                                <div class="font-medium text-stone-800 break-all">{{ item.address }}</div>
+                                <div class="eyebrow mb-1">地址</div>
+                                <div class="font-medium text-ink break-all">{{ item.address }}</div>
                             </div>
                         </div>
                         <div class="flex gap-3">
-                            <div class="text-[#606C38] mt-0.5 text-lg shrink-0">🚇</div>
+                            <div class="text-lagoon mt-0.5 text-lg shrink-0">🚇</div>
                             <div class="flex-1 min-w-0">
-                                <div class="text-stone-400 text-xs mb-0.5">最近車站</div>
-                                <div class="font-medium text-stone-800 break-all">{{ item.station || '未設定' }}</div>
+                                <div class="eyebrow mb-1">最近車站</div>
+                                <div class="font-medium text-ink break-all">{{ item.station || '未設定' }}</div>
                             </div>
                         </div>
                         <div class="flex gap-3">
-                            <div class="text-stone-500 mt-0.5 text-lg">🕒</div>
+                            <div class="text-muted mt-0.5 text-lg">🕒</div>
                             <div class="flex-1">
-                                <div class="text-stone-400 text-xs mb-0.5">Check-in</div>
-                                <div class="font-bold text-stone-800 font-mono text-base">{{ item.check_in_time }}</div>
+                                <div class="eyebrow mb-1">Check-in</div>
+                                <div class="font-bold text-ink font-mono text-base">{{ item.check_in_time }}</div>
                             </div>
                         </div>
                         <div class="flex gap-3">
-                            <div class="text-stone-500 mt-0.5 text-lg">🕒</div>
+                            <div class="text-muted mt-0.5 text-lg">🕒</div>
                             <div class="flex-1">
-                                <div class="text-stone-400 text-xs mb-0.5">Check-out</div>
-                                <div class="font-bold text-stone-800 font-mono text-base">{{ item.check_out_time }}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-[#F5F5F4] rounded-xl border border-stone-200 overflow-hidden shadow-sm mb-6" v-if="item.transportation && item.transportation.length > 0">
-                        <div class="p-3 border-b border-stone-200 flex items-center gap-2 bg-[#E7E5E4]/50"><span class="text-xl">🚄</span>
-                            <h3 class="font-bold text-[#6F4E37] text-sm">交通方式</h3>
-                        </div>
-                        <div class="p-5">
-                            <ol class="relative border-l-2 border-[#D4A373] ml-2 space-y-6">
-                                <li v-for="(trans, index) in item.transportation" :key="index" class="ml-6"><span class="absolute -left-[9px] flex items-center justify-center w-5 h-5 bg-stone-100 rounded-full border-2 border-[#D4A373] text-[10px] font-bold text-[#6F4E37] bg-white">{{ trans.step }}</span>
-                                    <p class="text-sm text-[#6F4E37] leading-relaxed font-medium">{{ trans.text }}</p>
-                                </li>
-                            </ol>
-                            <div class="mt-6 flex items-start gap-2 bg-white/60 p-3 rounded-lg border border-white/50" v-if="item.transport_note"><span class="text-[#D4A373] mt-0.5">💡</span>
-                                <p class="text-xs text-stone-600 font-medium">{{ item.transport_note }}</p>
+                                <div class="eyebrow mb-1">Check-out</div>
+                                <div class="font-bold text-ink font-mono text-base">{{ item.check_out_time }}</div>
                             </div>
                         </div>
                     </div>
 
-                    <a v-if="item.google_map_url" :href="item.google_map_url" target="_blank" class="block w-full bg-[#606C38] hover:bg-[#283618] text-white text-center py-3 rounded-lg font-bold shadow-sm active:scale-[0.99] transition-transform flex justify-center items-center gap-2">🗺️ Google地圖導航</a>
+                    <div class="rounded-2xl border border-ink/10 bg-paper-deep/50 overflow-hidden mb-6" v-if="item.transportation && item.transportation.length > 0">
+                        <div class="p-3 border-b border-ink/10 flex items-center gap-2 bg-paper-deep/50"><span class="text-xl">🚄</span>
+                            <h3 class="font-display font-bold text-ink text-sm">交通方式</h3>
+                        </div>
+                        <div class="p-5">
+                            <ol class="relative border-l-2 border-flare/40 ml-2 space-y-6">
+                                <li v-for="(trans, index) in item.transportation" :key="index" class="ml-6"><span class="absolute -left-[11px] flex items-center justify-center w-5 h-5 rounded-full border-2 border-flare bg-paper-deep font-mono text-[10px] font-bold text-flare">{{ trans.step }}</span>
+                                    <p class="text-sm text-ink-soft leading-relaxed font-medium">{{ trans.text }}</p>
+                                </li>
+                            </ol>
+                            <div class="mt-6 flex items-start gap-2 rounded-xl border border-amber/20 bg-amber/10 p-3" v-if="item.transport_note"><span class="text-amber mt-0.5">💡</span>
+                                <p class="text-xs text-ink-soft font-medium">{{ item.transport_note }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a v-if="item.google_map_url" :href="item.google_map_url" target="_blank" class="btn-primary w-full !py-3">🗺️ Google地圖導航</a>
                 </div>
             </div>
         </div>
     </div>
-    
-    <button v-if="props.isEditMode" @click="openAccEdit()" class="fixed bottom-32 right-6 w-14 h-14 bg-[#BC4749] text-white rounded-full shadow-xl shadow-[#BC4749]/30 flex items-center justify-center text-3xl pb-1 z-30 transition hover:scale-110 active:scale-95">+</button>
+
+    <button v-if="props.isEditMode" @click="openAccEdit()" class="btn-primary fixed bottom-28 right-6 !h-14 !w-14 !rounded-full !p-0 !pb-1 !text-3xl z-30 hover:scale-110" aria-label="新增住宿">+</button>
 
     <!-- 住宿表單 -->
-    <div v-if="showAccForm" class="fixed inset-0 bg-[#283618]/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" @click.self="showAccForm = false">
-        <div class="bg-[#FDFCF8] w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-5 bg-[#FDFCF8] z-10 py-2 border-b border-stone-200"><h3 class="text-lg font-black text-[#283618]">{{ isEditingAcc ? '編輯住宿' : '新增住宿' }}</h3><button @click="showAccForm = false" class="text-stone-400 text-2xl">×</button></div>
+    <div v-if="showAccForm" class="modal-backdrop" @click.self="showAccForm = false">
+        <div class="modal-panel !max-w-lg">
+            <div class="flex justify-between items-center mb-5"><h3 class="font-display text-xl font-bold text-ink">{{ isEditingAcc ? '編輯住宿' : '新增住宿' }}</h3><button @click="showAccForm = false" class="btn-icon" aria-label="關閉">✕</button></div>
             <div class="space-y-4">
-                <div><label class="text-xs text-stone-500">名稱</label><input v-model="accForm.name" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
-                <div class="grid grid-cols-2 gap-x-3 gap-y-3 bg-stone-50 p-3 rounded-xl border border-stone-200">
-                    
-                    <div class="col-span-2 text-xs font-bold text-stone-700 flex items-center gap-1">
+                <div><label class="field-label">名稱</label><input v-model="accForm.name" class="field" /></div>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-3 rounded-2xl border border-ink/10 bg-paper-deep/50 p-3">
+
+                    <div class="col-span-2 text-xs font-bold text-ink flex items-center gap-1">
                         <span>📥</span> 入住時間 (Check-in)
                     </div>
-                    
+
                     <div>
-                        <label class="text-[10px] text-stone-400 font-bold mb-0.5 block">日期</label>
-                        <input 
-                            v-model="accForm.check_in_date" 
-                            type="date" 
-                            class="w-full appearance-none m-0 bg-white border border-stone-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#606C38] min-w-0" 
+                        <label class="field-label">日期</label>
+                        <input
+                            v-model="accForm.check_in_date"
+                            type="date"
+                            class="field appearance-none m-0 min-w-0 font-mono !px-3"
                         />
                     </div>
-                    
+
                     <div>
-                        <label class="text-[10px] text-stone-400 font-bold mb-0.5 block">時間</label>
+                        <label class="field-label">時間</label>
                         <div class="relative">
-                            <select v-model="accForm.check_in_time" class="w-full appearance-none bg-white border border-stone-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#606C38]">
+                            <select v-model="accForm.check_in_time" class="field appearance-none font-mono !px-3">
                                 <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
                             </select>
-                            <div class="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none text-[10px]">▼</div>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-[10px]">▼</div>
                         </div>
                     </div>
 
-                    <div class="col-span-2 border-t border-stone-200 my-1"></div>
+                    <div class="col-span-2 hairline my-1"></div>
 
-                    <div class="col-span-2 text-xs font-bold text-stone-700 flex items-center gap-1">
+                    <div class="col-span-2 text-xs font-bold text-ink flex items-center gap-1">
                         <span>📤</span> 退房時間 (Check-out)
                     </div>
-                    
+
                     <div>
-                        <label class="text-[10px] text-stone-400 font-bold mb-0.5 block">日期</label>
-                        <input 
-                            v-model="accForm.check_out_date" 
-                            type="date" 
-                            class="w-full appearance-none m-0 bg-white border border-stone-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#606C38] min-w-0" 
+                        <label class="field-label">日期</label>
+                        <input
+                            v-model="accForm.check_out_date"
+                            type="date"
+                            class="field appearance-none m-0 min-w-0 font-mono !px-3"
                         />
                     </div>
-                    
+
                     <div>
-                        <label class="text-[10px] text-stone-400 font-bold mb-0.5 block">時間</label>
+                        <label class="field-label">時間</label>
                         <div class="relative">
-                            <select v-model="accForm.check_out_time" class="w-full appearance-none bg-white border border-stone-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#606C38]">
+                            <select v-model="accForm.check_out_time" class="field appearance-none font-mono !px-3">
                                 <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
                             </select>
-                            <div class="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none text-[10px]">▼</div>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-[10px]">▼</div>
                         </div>
                     </div>
                 </div>
-                <div><label class="text-xs text-stone-500">地址</label><input v-model="accForm.address" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
-                <div><label class="text-xs text-stone-500">最近車站</label><input v-model="accForm.station" placeholder="例如: JR淺草站 (步行5分)" class="w-full border border-stone-300 bg-white rounded px-2 py-2 focus:outline-none focus:border-[#606C38]" /></div>
-                <div><label class="text-xs text-stone-500">Google Map URL</label><input v-model="accForm.google_map_url" class="w-full border border-stone-300 bg-white rounded px-2 py-2 text-[#606C38] focus:outline-none focus:border-[#606C38]" /></div>
-                <div class="bg-stone-50 p-3 rounded border border-stone-200">
-                    <label class="text-xs font-bold mb-2 block text-stone-700">交通步驟</label>
-                    <div v-for="(step, idx) in accForm.transportation" :key="idx" class="flex gap-2 mb-2"><span class="w-6 h-6 flex items-center justify-center bg-white border border-stone-300 rounded-full text-xs mt-2 text-[#606C38] font-bold">{{ Number(idx)+1 }}</span><textarea v-model="step.text" class="flex-1 bg-white border border-stone-300 rounded px-2 py-1 h-16 resize-none focus:outline-none focus:border-[#606C38] break-all"></textarea><button @click="removeTransportStep(idx)" class="text-[#BC4749] self-center">×</button></div>
-                    <button @click="addTransportStep" class="w-full py-2 border border-dashed border-stone-300 rounded text-xs text-stone-500 hover:bg-stone-100">+ 步驟</button>
+                <div><label class="field-label">地址</label><input v-model="accForm.address" class="field" /></div>
+                <div><label class="field-label">最近車站</label><input v-model="accForm.station" placeholder="例如: JR淺草站 (步行5分)" class="field" /></div>
+                <div><label class="field-label">Google Map URL</label><input v-model="accForm.google_map_url" class="field !text-flare" /></div>
+                <div class="rounded-2xl border border-ink/10 bg-paper-deep/50 p-3">
+                    <label class="field-label">交通步驟</label>
+                    <div v-for="(step, idx) in accForm.transportation" :key="idx" class="flex gap-2 mb-2"><span class="w-6 h-6 shrink-0 flex items-center justify-center bg-paper-deep border border-flare/50 rounded-full font-mono text-xs mt-3 text-flare font-bold">{{ Number(idx)+1 }}</span><textarea v-model="step.text" class="field flex-1 !py-2 h-16 resize-none break-all"></textarea><button @click="removeTransportStep(idx)" class="text-alert self-center px-1 text-lg">×</button></div>
+                    <button @click="addTransportStep" class="w-full py-2 border border-dashed border-ink/15 rounded-xl text-xs text-muted transition hover:bg-paper-deep hover:text-ink">+ 步驟</button>
                 </div>
-                
-                <div class="flex gap-3 mt-6 pt-2 border-t border-stone-100">
-                    <button v-if="isEditingAcc" @click="handleDeleteAccommodation" class="bg-red-50 text-[#BC4749] px-4 py-3 rounded-xl font-bold text-sm">刪除</button>
-                    <button @click="saveAccommodation" class="flex-1 bg-[#283618] text-white py-3 rounded-xl font-bold hover:bg-[#3A5A40]">儲存</button>
+
+                <div class="flex gap-3 mt-6 pt-4 border-t border-ink/10">
+                    <button v-if="isEditingAcc" @click="handleDeleteAccommodation" class="btn-danger">刪除</button>
+                    <button @click="saveAccommodation" class="btn-primary flex-1">儲存</button>
                 </div>
             </div>
         </div>
