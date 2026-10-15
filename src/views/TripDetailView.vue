@@ -11,7 +11,6 @@
   import AccommodationTab from '../components/trip/AccommodationTab.vue'
   import ExpenseTab from '../components/trip/ExpenseTab.vue'
   import PackingTab from '../components/trip/PackingTab.vue'
-  import RouteOverview from '../components/trip/RouteOverview.vue'
 
   const route = useRoute()
   const router = useRouter()
@@ -21,7 +20,6 @@
   // --- 共用變數 ---
   const tripName = ref('')
   const activeTab = ref('itinerary')
-  const itineraryView = ref<'list' | 'route'>('list')
   const subtitleRaw = ref('')
   const startDateRaw = ref('')
   const endDateRaw = ref('')
@@ -43,7 +41,6 @@
   // 用於獲取子組件資料以計算日期標籤與路線
   const itineraryRef = ref<any>(null)
   const attractionRef = ref<any>(null)
-  const accommodationRef = ref<any>(null)
 
   function goBack() {
     router.push('/')
@@ -409,18 +406,10 @@
     </div>
     <div v-else class="h-6"></div>
 
-    <!-- 行程：清單 / 路線 切換 -->
-    <div v-if="activeTab === 'itinerary'" class="mx-auto mb-4 flex max-w-2xl px-5">
-      <div class="inline-flex rounded-full border border-ink/15 bg-card p-1">
-        <button @click="itineraryView = 'list'" class="rounded-full px-4 py-1.5 text-xs font-bold transition cursor-pointer" :class="itineraryView === 'list' ? 'bg-ink text-card' : 'text-muted hover:text-ink'">📋 清單</button>
-        <button @click="itineraryView = 'route'" class="rounded-full px-4 py-1.5 text-xs font-bold transition cursor-pointer" :class="itineraryView === 'route' ? 'bg-ink text-card' : 'text-muted hover:text-ink'">🗺️ 每日路線</button>
-      </div>
-    </div>
-
     <!-- 各模組內容 -->
     <div class="mx-auto max-w-2xl">
       <ItineraryTab
-        v-show="activeTab === 'itinerary' && itineraryView === 'list'"
+        v-show="activeTab === 'itinerary'"
         ref="itineraryRef"
         :trip-id="tripId"
         :is-edit-mode="isEditMode"
@@ -428,15 +417,6 @@
         :start-date-raw="startDateRaw"
         @activity-saved="onActivitySaved"
       />
-
-      <div v-if="activeTab === 'itinerary' && itineraryView === 'route'" class="px-5">
-        <RouteOverview
-          :activities="itineraryRef?.activities || []"
-          :attractions="attractionRef?.attractions || []"
-          :accommodations="accommodationRef?.accommodations || []"
-          :selected-date="selectedDate"
-        />
-      </div>
 
       <AttractionTab
         v-show="activeTab === 'attractions'"
@@ -449,7 +429,6 @@
 
       <AccommodationTab
         v-show="activeTab === 'accommodation'"
-        ref="accommodationRef"
         :trip-id="tripId"
         :is-edit-mode="isEditMode"
       />
@@ -616,7 +595,7 @@
         </div>
 
         <p class="text-sm leading-relaxed text-ink-soft">
-          拿到連結的人不用登入就能看<strong class="text-ink">行程、景點、住宿與每日路線</strong>，但無法修改，也看不到記帳。
+          拿到連結的人不用登入就能看<strong class="text-ink">行程、景點與住宿</strong>，但無法修改，也看不到記帳。
         </p>
 
         <div v-if="shareToken" class="mt-5 space-y-3">

@@ -5,7 +5,6 @@
 import { friendlyError } from '../lib/errorMessage'
 import { safeUrl } from '../lib/safeUrl'
   import { getTripStatus, parseLocalDate } from '../lib/tripStatus'
-  import RouteOverview from '../components/trip/RouteOverview.vue'
 
   // 唯讀分享頁：不需登入，資料只來自 RPC get_shared_trip (不含記帳、Email)。
   // 刻意不 import ItineraryTab / AttractionTab / AccommodationTab (它們直接查資料表，未登入會被權限擋)。
@@ -21,7 +20,7 @@ import { safeUrl } from '../lib/safeUrl'
   const attractions = ref<any[]>([])
   const accommodations = ref<any[]>([])
 
-  const section = ref<'daily' | 'route' | 'places'>('daily')
+  const section = ref<'daily' | 'places'>('daily')
   const selectedDate = ref('')
 
   async function load() {
@@ -117,7 +116,6 @@ import { safeUrl } from '../lib/safeUrl'
 
   const sections = [
     { key: 'daily', label: '每日行程' },
-    { key: 'route', label: '路線' },
     { key: 'places', label: '景點與住宿' },
   ] as const
 
@@ -275,15 +273,6 @@ import { safeUrl } from '../lib/safeUrl'
             </div>
           </section>
         </div>
-
-        <!-- 路線 -->
-        <RouteOverview
-          v-else-if="section === 'route'"
-          :activities="activities"
-          :attractions="attractions"
-          :accommodations="accommodations"
-          :selected-date="selectedDate"
-        />
 
         <!-- 景點與住宿 -->
         <div v-else class="space-y-8 px-5">
