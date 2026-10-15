@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../../lib/supabaseClient'
+import { Plane, Utensils, BedDouble, MapPin } from 'lucide-vue-next'
 
 const props = defineProps<{
   tripId: string | string[]
@@ -125,10 +126,10 @@ defineExpose({ loadData: loadActivitiesData, activities })
                         <div class="w-[2px] h-full bg-ink/10"></div>
                     </div>
                     <div class="absolute -right-[35px] top-2.5 w-6 h-6 bg-paper-deep rounded-full flex items-center justify-center text-[12px] shadow-sm border border-ink/15 z-10">
-                        <span v-if="act.category === '交通'">✈️</span>
-                        <span v-else-if="act.category === '餐飲'">🍽️</span>
-                        <span v-else-if="act.category === '住宿'">🏨</span>
-                        <span v-else>📍</span>
+                        <Plane v-if="act.category === '交通'" class="h-3.5 w-3.5 text-ink-soft" :stroke-width="2" aria-hidden="true" />
+                        <Utensils v-else-if="act.category === '餐飲'" class="h-3.5 w-3.5 text-ink-soft" :stroke-width="2" aria-hidden="true" />
+                        <BedDouble v-else-if="act.category === '住宿'" class="h-3.5 w-3.5 text-ink-soft" :stroke-width="2" aria-hidden="true" />
+                        <MapPin v-else class="h-3.5 w-3.5 text-ink-soft" :stroke-width="2" aria-hidden="true" />
                     </div>
                 </div>
 
@@ -170,7 +171,7 @@ defineExpose({ loadData: loadActivitiesData, activities })
                     <select v-model="activityForm.category" class="field flex-1"><option>景點</option><option>交通</option><option>餐飲</option><option>活動</option><option>住宿</option></select>
                 </div>
                 <input v-model="activityForm.title" placeholder="名稱" class="field" />
-                <input v-model="activityForm.map_url" placeholder="📍 Google Map 連結" class="field !text-flare" />
+                <input v-model="activityForm.map_url" placeholder="Google Map 連結" class="field !text-flare" />
                 <textarea v-model="activityForm.description" placeholder="備註" class="field h-24 resize-none break-all"></textarea>
                 <div class="flex gap-2 mt-2">
                     <button v-if="isEditingActivity" @click="handleDeleteActivity" class="btn-danger flex-1">刪除</button>

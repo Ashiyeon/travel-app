@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../../lib/supabaseClient'
+import { Pencil, Sparkles, Utensils, TrainFront, Clock, Ticket, Navigation, MapPin } from 'lucide-vue-next'
 
 const props = defineProps<{
   tripId: string | string[]
@@ -123,13 +124,13 @@ defineExpose({ loadData: loadAttractionsData, attractions })
   <section class="px-4 pb-20">
     <div class="flex justify-between items-center mb-4 pl-1">
         <h2 class="font-display text-xl font-bold text-ink flex items-center gap-2">
-            <span class="text-xl">🌅</span> 景點詳細介紹
+            景點詳細介紹
         </h2>
     </div>
 
     <div class="grid gap-6 stagger">
         <div v-for="(attr, cardIdx) in filteredAttractions" :key="attr.id" :style="{ '--i': cardIdx }" class="card overflow-hidden relative group">
-            <button v-if="props.isEditMode" @click="openAttractionForm(attr)" class="btn-icon absolute top-3 right-3 z-10 backdrop-blur-sm">✏️</button>
+            <button v-if="props.isEditMode" @click="openAttractionForm(attr)" class="btn-icon absolute top-3 right-3 z-10 backdrop-blur-sm" aria-label="編輯景點"><Pencil class="h-4 w-4" :stroke-width="1.75" aria-hidden="true" /></button>
             <div class="relative overflow-hidden p-6 pt-10 pb-8">
                 <div class="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-flare"></div>
                 <div v-if="attr.location_tag" class="tag relative !text-flare !border-flare/30 !bg-flare/10 font-mono uppercase tracking-wider mb-3">
@@ -142,22 +143,22 @@ defineExpose({ loadData: loadAttractionsData, attractions })
             <div class="p-5">
                 <p class="text-ink-soft text-sm leading-relaxed mb-5 text-justify">{{ attr.description || '暫無描述' }}</p>
                 <div class="rounded-2xl p-4 mb-5 border border-ink/10 bg-paper-deep/50" v-if="attr.highlights || attr.must_eat">
-                    <h4 class="eyebrow !text-amber mb-3 flex items-center gap-1"><span>✨</span> 必訪亮點 </h4>
+                    <h4 class="eyebrow !text-amber mb-3 flex items-center gap-1"><Sparkles class="h-3.5 w-3.5 shrink-0" :stroke-width="2" aria-hidden="true" /> 必訪亮點 </h4>
                     <ul class="space-y-2">
                         <li v-for="(line, idx) in parseLines(attr.highlights)" :key="'h'+idx" class="flex items-start gap-2 text-sm text-ink">
                             <span class="mt-0.5 text-xs text-flare">●</span><span>{{ line }}</span>
                         </li>
                         <li v-for="(line, idx) in parseLines(attr.must_eat)" :key="'m'+idx" class="flex items-start gap-2 text-sm text-ink">
-                            <span class="mt-0.5 text-xs text-flare">🍽️</span><span>{{ line }}</span>
+                            <Utensils class="mt-0.5 h-3.5 w-3.5 shrink-0 text-flare" :stroke-width="2" aria-hidden="true" /><span>{{ line }}</span>
                         </li>
                     </ul>
                 </div>
                 <div class="grid grid-cols-1 gap-y-3 text-sm text-muted mb-6">
-                    <div class="flex items-start gap-3" v-if="attr.transport_info"><div class="w-5 text-center text-lg shrink-0">🚇</div><div class="flex-1 border-b border-ink/10 pb-2 break-all">{{ attr.transport_info }}</div></div>
-                    <div class="flex items-start gap-3" v-if="attr.opening_hours"><div class="w-5 text-center text-lg shrink-0">⏰</div><div class="flex-1 border-b border-ink/10 pb-2 break-all font-mono">{{ attr.opening_hours }}</div></div>
-                    <div class="flex items-start gap-3" v-if="attr.ticket_price"><div class="w-5 text-center text-lg shrink-0">🎫</div><div class="flex-1 break-all">{{ attr.ticket_price }}</div></div>
+                    <div class="flex items-start gap-3" v-if="attr.transport_info"><TrainFront class="mt-0.5 h-5 w-5 shrink-0" :stroke-width="1.75" aria-hidden="true" /><div class="flex-1 border-b border-ink/10 pb-2 break-all">{{ attr.transport_info }}</div></div>
+                    <div class="flex items-start gap-3" v-if="attr.opening_hours"><Clock class="mt-0.5 h-5 w-5 shrink-0" :stroke-width="1.75" aria-hidden="true" /><div class="flex-1 border-b border-ink/10 pb-2 break-all font-mono">{{ attr.opening_hours }}</div></div>
+                    <div class="flex items-start gap-3" v-if="attr.ticket_price"><Ticket class="mt-0.5 h-5 w-5 shrink-0" :stroke-width="1.75" aria-hidden="true" /><div class="flex-1 break-all">{{ attr.ticket_price }}</div></div>
                 </div>
-                <a v-if="attr.map_url" :href="attr.map_url" target="_blank" class="btn-primary w-full !py-3"><span>🗺️</span> Google 地圖導航</a>
+                <a v-if="attr.map_url" :href="attr.map_url" target="_blank" class="btn-primary w-full !py-3"><Navigation class="h-4 w-4" :stroke-width="2" aria-hidden="true" /> Google 地圖導航</a>
             </div>
         </div>
         <div v-if="filteredAttractions.length === 0" class="card py-12 text-center !border-dashed !border-ink/15">
@@ -195,15 +196,15 @@ defineExpose({ loadData: loadAttractionsData, attractions })
                 </div>
                 <div><label class="field-label">介紹描述</label><textarea v-model="attractionForm.description" class="field h-24"></textarea></div>
                 <div class="rounded-2xl border border-ink/10 bg-paper-deep/50 p-3">
-                    <label class="field-label !text-amber">✨ 必訪亮點 (一行一個)</label><textarea v-model="attractionForm.highlights" class="field h-20"></textarea>
-                    <label class="field-label !text-amber mt-3">🍽️ 必吃美食 (一行一個，可選)</label><textarea v-model="attractionForm.must_eat" class="field h-16"></textarea>
+                    <label class="field-label !text-amber"><Sparkles class="mr-1 inline-block h-3.5 w-3.5 align-[-2px]" :stroke-width="2" aria-hidden="true" />必訪亮點 (一行一個)</label><textarea v-model="attractionForm.highlights" class="field h-20"></textarea>
+                    <label class="field-label !text-amber mt-3"><Utensils class="mr-1 inline-block h-3.5 w-3.5 align-[-2px]" :stroke-width="2" aria-hidden="true" />必吃美食 (一行一個，可選)</label><textarea v-model="attractionForm.must_eat" class="field h-16"></textarea>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="field-label">🚇 交通方式</label><input v-model="attractionForm.transport_info" class="field" /></div>
-                    <div><label class="field-label">🎫 門票/費用</label><input v-model="attractionForm.ticket_price" class="field" /></div>
-                    <div class="col-span-2"><label class="field-label">⏰ 營業時間</label><input v-model="attractionForm.opening_hours" class="field" /></div>
+                    <div><label class="field-label"><TrainFront class="mr-1 inline-block h-3.5 w-3.5 align-[-2px]" :stroke-width="2" aria-hidden="true" />交通方式</label><input v-model="attractionForm.transport_info" class="field" /></div>
+                    <div><label class="field-label"><Ticket class="mr-1 inline-block h-3.5 w-3.5 align-[-2px]" :stroke-width="2" aria-hidden="true" />門票/費用</label><input v-model="attractionForm.ticket_price" class="field" /></div>
+                    <div class="col-span-2"><label class="field-label"><Clock class="mr-1 inline-block h-3.5 w-3.5 align-[-2px]" :stroke-width="2" aria-hidden="true" />營業時間</label><input v-model="attractionForm.opening_hours" class="field" /></div>
                 </div>
-                <div><label class="field-label">📍 Google Map URL</label><input v-model="attractionForm.map_url" class="field !text-xs !text-flare" /></div>
+                <div><label class="field-label"><MapPin class="mr-1 inline-block h-3.5 w-3.5 align-[-2px]" :stroke-width="2" aria-hidden="true" />Google Map URL</label><input v-model="attractionForm.map_url" class="field !text-xs !text-flare" /></div>
                 <div class="flex gap-3 mt-6 pt-4 border-t border-ink/10">
                     <button v-if="isEditingAttraction" @click="handleDeleteAttraction" class="btn-danger">刪除</button>
                     <button @click="handleSaveAttraction" class="btn-primary flex-1">儲存設定</button>

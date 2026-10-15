@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../../lib/supabaseClient'
+import { wheelToHorizontal } from '../../lib/wheelScroll'
+import { Luggage } from 'lucide-vue-next'
 
 const props = defineProps<{
   tripId: string | string[]
@@ -284,7 +286,7 @@ defineExpose({ loadData, items })
     <div class="mb-4 pl-1">
       <div class="flex justify-between items-center">
         <h2 class="font-display text-xl font-bold text-ink flex items-center gap-2">
-          <span class="text-2xl">🧳</span> 行李清單
+          行李清單
         </h2>
         <span v-if="totalCount > 0" class="eyebrow">
           已打包 <span class="font-mono text-ink font-bold">{{ packedCount }}</span> / 共 <span class="font-mono text-ink font-bold">{{ totalCount }}</span>
@@ -307,7 +309,7 @@ defineExpose({ loadData, items })
 
     <!-- 空狀態 -->
     <div v-else-if="items.length === 0" class="card py-12 px-5 text-center !border-dashed !border-ink/15">
-      <div class="text-4xl mb-2">🧳</div>
+      <Luggage class="mx-auto mb-3 h-10 w-10 text-faint" :stroke-width="1.5" aria-hidden="true" />
       <p class="text-muted mb-1">{{ props.isEditMode ? '還沒有任何要帶的東西' : '行李清單還是空的' }}</p>
       <p v-if="props.isEditMode" class="text-faint text-xs mb-4">可以一鍵帶入常用項目，再慢慢調整</p>
       <div v-if="props.isEditMode" class="flex flex-wrap justify-center gap-2">
@@ -318,7 +320,7 @@ defineExpose({ loadData, items })
 
     <template v-else>
       <!-- 篩選 chip -->
-      <div class="flex gap-2 overflow-x-auto no-scrollbar pb-3 -mx-4 px-4">
+      <div class="flex gap-2 overflow-x-auto no-scrollbar pb-3 -mx-4 px-4" @wheel="wheelToHorizontal">
         <button class="chip" :class="{ 'chip-active': filter === FILTER_ALL }" @click="filter = FILTER_ALL">全部</button>
         <button v-for="m in memberChips" :key="m" class="chip" :class="{ 'chip-active': filter === m }" @click="filter = m">{{ m }}</button>
         <button class="chip" :class="{ 'chip-active': filter === FILTER_NONE }" @click="filter = FILTER_NONE">未指定</button>

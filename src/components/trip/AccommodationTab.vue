@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../../lib/supabaseClient'
+import { BedDouble, CalendarDays, MapPin, TrainFront, LogIn, LogOut, Route, Lightbulb, Navigation, Pencil } from 'lucide-vue-next'
 
 const props = defineProps<{
   tripId: string | string[]
@@ -126,9 +127,7 @@ defineExpose({ loadData: loadAccommodationData, accommodations })
 <template>
   <section class="px-4 pb-20">
     <div class="flex justify-between items-center mb-4 pl-1">
-        <h2 class="font-display text-xl font-bold text-ink flex items-center gap-2">
-            <span class="text-2xl">🏨</span> 住宿資訊
-        </h2>
+        <h2 class="font-display text-xl font-bold text-ink">住宿資訊</h2>
          <span class="eyebrow" v-if="accommodations.length > 0">共 {{ accommodations.length }} 間</span>
     </div>
 
@@ -141,18 +140,18 @@ defineExpose({ loadData: loadAccommodationData, accommodations })
         <div v-for="(item, cardIdx) in accommodations" :key="item.id" :style="{ '--i': cardIdx }">
             <div class="card overflow-hidden relative group">
 
-                <button v-if="props.isEditMode" @click="openAccEdit(item)" class="btn-icon absolute top-3 right-3 z-10 backdrop-blur-sm">
-                    ✏️
+                <button v-if="props.isEditMode" @click="openAccEdit(item)" class="btn-icon absolute top-3 right-3 z-10 backdrop-blur-sm" aria-label="編輯住宿">
+                    <Pencil class="h-4 w-4" :stroke-width="1.75" />
                 </button>
 
                 <div class="relative overflow-hidden p-5 pr-16">
                     <div class="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-aurora"></div>
                     <div class="relative flex items-start gap-3">
-                        <div class="rounded-2xl border border-ink/10 bg-paper-deep p-2 text-2xl">🏠</div>
+                        <div class="rounded-2xl border border-ink/10 bg-paper-deep p-2.5 text-flare" aria-hidden="true"><BedDouble class="h-6 w-6" :stroke-width="1.5" /></div>
                         <div>
                             <h3 class="font-display font-bold text-lg leading-tight text-ink">{{ item.name }}</h3>
                             <div class="text-muted text-sm mt-1.5 flex flex-wrap items-center gap-2">
-                                <div class="flex items-center gap-1"><span>📅</span><span>{{ getDisplayCheckInDate(item) }} 入住</span></div>
+                                <div class="flex items-center gap-1.5"><CalendarDays class="h-3.5 w-3.5" :stroke-width="1.75" aria-hidden="true" /><span>{{ getDisplayCheckInDate(item) }} 入住</span></div>
                                 <span class="tag !text-flare !border-flare/30 !bg-flare/10 font-mono">{{ getStayDuration(item) }} 晚</span>
                             </div>
                         </div>
@@ -163,28 +162,28 @@ defineExpose({ loadData: loadAccommodationData, accommodations })
                 <div class="p-5">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 mb-6 text-sm">
                         <div class="flex gap-3">
-                            <div class="text-flare mt-0.5 text-lg shrink-0">📍</div>
+                            <MapPin class="mt-0.5 h-5 w-5 shrink-0 text-flare" :stroke-width="1.75" aria-hidden="true" />
                             <div class="flex-1 min-w-0">
                                 <div class="eyebrow mb-1">地址</div>
                                 <div class="font-medium text-ink break-all">{{ item.address }}</div>
                             </div>
                         </div>
                         <div class="flex gap-3">
-                            <div class="text-lagoon mt-0.5 text-lg shrink-0">🚇</div>
+                            <TrainFront class="mt-0.5 h-5 w-5 shrink-0 text-lagoon" :stroke-width="1.75" aria-hidden="true" />
                             <div class="flex-1 min-w-0">
                                 <div class="eyebrow mb-1">最近車站</div>
                                 <div class="font-medium text-ink break-all">{{ item.station || '未設定' }}</div>
                             </div>
                         </div>
                         <div class="flex gap-3">
-                            <div class="text-muted mt-0.5 text-lg">🕒</div>
+                            <LogIn class="mt-0.5 h-5 w-5 shrink-0 text-muted" :stroke-width="1.75" aria-hidden="true" />
                             <div class="flex-1">
                                 <div class="eyebrow mb-1">Check-in</div>
                                 <div class="font-bold text-ink font-mono text-base">{{ item.check_in_time }}</div>
                             </div>
                         </div>
                         <div class="flex gap-3">
-                            <div class="text-muted mt-0.5 text-lg">🕒</div>
+                            <LogOut class="mt-0.5 h-5 w-5 shrink-0 text-muted" :stroke-width="1.75" aria-hidden="true" />
                             <div class="flex-1">
                                 <div class="eyebrow mb-1">Check-out</div>
                                 <div class="font-bold text-ink font-mono text-base">{{ item.check_out_time }}</div>
@@ -193,7 +192,7 @@ defineExpose({ loadData: loadAccommodationData, accommodations })
                     </div>
 
                     <div class="rounded-2xl border border-ink/10 bg-paper-deep/50 overflow-hidden mb-6" v-if="item.transportation && item.transportation.length > 0">
-                        <div class="p-3 border-b border-ink/10 flex items-center gap-2 bg-paper-deep/50"><span class="text-xl">🚄</span>
+                        <div class="p-3 border-b border-ink/10 flex items-center gap-2 bg-paper-deep/50"><Route class="h-4 w-4 text-flare" :stroke-width="1.75" aria-hidden="true" />
                             <h3 class="font-display font-bold text-ink text-sm">交通方式</h3>
                         </div>
                         <div class="p-5">
@@ -202,13 +201,13 @@ defineExpose({ loadData: loadAccommodationData, accommodations })
                                     <p class="text-sm text-ink-soft leading-relaxed font-medium">{{ trans.text }}</p>
                                 </li>
                             </ol>
-                            <div class="mt-6 flex items-start gap-2 rounded-xl border border-amber/20 bg-amber/10 p-3" v-if="item.transport_note"><span class="text-amber mt-0.5">💡</span>
+                            <div class="mt-6 flex items-start gap-2 rounded-xl border border-amber/20 bg-amber/10 p-3" v-if="item.transport_note"><Lightbulb class="mt-0.5 h-4 w-4 shrink-0 text-amber" :stroke-width="1.75" aria-hidden="true" />
                                 <p class="text-xs text-ink-soft font-medium">{{ item.transport_note }}</p>
                             </div>
                         </div>
                     </div>
 
-                    <a v-if="item.google_map_url" :href="item.google_map_url" target="_blank" class="btn-primary w-full !py-3">🗺️ Google地圖導航</a>
+                    <a v-if="item.google_map_url" :href="item.google_map_url" target="_blank" class="btn-primary w-full !py-3"><Navigation class="h-4 w-4" :stroke-width="2" aria-hidden="true" /> Google 地圖導航</a>
                 </div>
             </div>
         </div>
@@ -225,7 +224,7 @@ defineExpose({ loadData: loadAccommodationData, accommodations })
                 <div class="grid grid-cols-2 gap-x-3 gap-y-3 rounded-2xl border border-ink/10 bg-paper-deep/50 p-3">
 
                     <div class="col-span-2 text-xs font-bold text-ink flex items-center gap-1">
-                        <span>📥</span> 入住時間 (Check-in)
+                        <LogIn class="h-3.5 w-3.5 text-muted" :stroke-width="2" aria-hidden="true" /> 入住時間 (Check-in)
                     </div>
 
                     <div>
@@ -250,7 +249,7 @@ defineExpose({ loadData: loadAccommodationData, accommodations })
                     <div class="col-span-2 hairline my-1"></div>
 
                     <div class="col-span-2 text-xs font-bold text-ink flex items-center gap-1">
-                        <span>📤</span> 退房時間 (Check-out)
+                        <LogOut class="h-3.5 w-3.5 text-muted" :stroke-width="2" aria-hidden="true" /> 退房時間 (Check-out)
                     </div>
 
                     <div>

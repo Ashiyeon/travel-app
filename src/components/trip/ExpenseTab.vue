@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, markRaw } from 'vue'
 import { supabase } from '../../lib/supabaseClient'
+import { Utensils, Bus, BedDouble, Ticket, Gift, ShoppingBag, Plane, Ellipsis, CircleCheck } from 'lucide-vue-next'
 
 // --- 引入 Chart.js ---
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
@@ -46,14 +47,14 @@ const editingExpenseId = ref<number | null>(null)
 
 // 記帳分類
 const expenseCategories = [
-  { name: '餐飲', icon: '🍽️' },
-  { name: '交通', icon: '🚌' },
-  { name: '住宿', icon: '🛏️' },
-  { name: '門票', icon: '🎫' },
-  { name: '伴手禮', icon: '🎁' },
-  { name: '購物', icon: '🛍️' },
-  { name: '機票', icon: '✈️' },
-  { name: '其他', icon: '📍' }
+  { name: '餐飲', icon: markRaw(Utensils) },
+  { name: '交通', icon: markRaw(Bus) },
+  { name: '住宿', icon: markRaw(BedDouble) },
+  { name: '門票', icon: markRaw(Ticket) },
+  { name: '伴手禮', icon: markRaw(Gift) },
+  { name: '購物', icon: markRaw(ShoppingBag) },
+  { name: '機票', icon: markRaw(Plane) },
+  { name: '其他', icon: markRaw(Ellipsis) }
 ]
 
 // 支付方式
@@ -408,7 +409,7 @@ defineExpose({ loadData: loadExpensesData })
   <section class="px-4 pb-20">
     <div class="flex justify-between items-center mb-4 pl-1">
         <h2 class="font-display text-xl font-bold text-ink flex items-center gap-2">
-            <span class="text-2xl">💰</span> 旅程記帳
+            旅程記帳
         </h2>
         <span class="eyebrow" v-if="expenses.length > 0">共 {{ expenses.length }} 筆</span>
     </div>
@@ -420,7 +421,7 @@ defineExpose({ loadData: loadExpensesData })
             <button v-for="cat in expenseCategories" :key="cat.name"
                 @click="openExpenseForm({ category: cat.name })"
                 class="p-3 rounded-2xl bg-paper-deep/50 hover:bg-paper-deep border border-ink/10 hover:border-flare/50 transition-all flex flex-col items-center gap-1 group cursor-pointer">
-                <span class="text-2xl group-hover:scale-110 transition">{{ cat.icon }}</span>
+                <component :is="cat.icon" class="h-6 w-6 text-ink-soft transition group-hover:scale-110" :stroke-width="1.75" aria-hidden="true" />
                 <span class="text-[10px] font-bold text-ink-soft">{{ cat.name }}</span>
             </button>
         </div>
@@ -445,7 +446,7 @@ defineExpose({ loadData: loadExpensesData })
     </div>
 
     <div v-if="expenses.length > 0" class="card p-5 mb-6">
-        <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2">🍰 支出分佈</h3>
+        <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2">支出分佈</h3>
         <div class="h-48 relative flex justify-center">
             <Doughnut :data="expenseChartData" :options="chartOptions" />
         </div>
@@ -473,7 +474,7 @@ defineExpose({ loadData: loadExpensesData })
             :class="{ 'cursor-default': !props.isEditMode, 'card-hover cursor-pointer': props.isEditMode }"
             class="card p-4 flex justify-between items-center">
             <div class="flex-1 flex items-center gap-4 min-w-0">
-                <span class="text-2xl flex-shrink-0">{{ expenseCategories.find(c => c.name === expense.category)?.icon || '📍' }}</span>
+                <component :is="expenseCategories.find(c => c.name === expense.category)?.icon || Ellipsis" class="h-6 w-6 shrink-0 text-ink-soft" :stroke-width="1.75" aria-hidden="true" />
                 <div class="flex-1 min-w-0">
                     <p class="font-bold text-ink break-all">{{ expense.title }}</p>
                     <p class="text-xs text-muted truncate font-mono">{{ expense.expense_date }} · {{ expense.category }} · {{ expense.payment_method }}</p>
@@ -492,7 +493,7 @@ defineExpose({ loadData: loadExpensesData })
     <div v-if="expenses.length > 0 && settlementCalculation.settlement && Object.keys(settlementCalculation.settlement).length > 0" class="mt-8 space-y-4">
         <!-- 付款統計 -->
         <div class="card p-5">
-            <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2">📊 付款統計</h3>
+            <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2">付款統計</h3>
             <div class="space-y-2">
                 <div v-for="(amount, person) in settlementCalculation.settlement" :key="person" class="rounded-2xl p-3 bg-paper-deep/50 border border-ink/10 flex justify-between items-center">
                     <p class="font-bold text-ink">{{ person }}</p>
@@ -508,7 +509,7 @@ defineExpose({ loadData: loadExpensesData })
 
         <!-- 誰欠誰錢 (結算指示) -->
         <div v-if="settlementCalculation.transactions && settlementCalculation.transactions.length > 0" class="card p-5">
-            <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2">💸 結算清單</h3>
+            <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2">結算清單</h3>
             <div class="space-y-3">
                 <div v-for="(tx, index) in settlementCalculation.transactions" :key="index" class="flex items-center justify-between p-3 bg-paper-deep/50 rounded-2xl border border-ink/10">
                     <div class="flex items-center gap-3">
@@ -524,7 +525,7 @@ defineExpose({ loadData: loadExpensesData })
         </div>
 
         <div v-else-if="expenses.length > 0" class="bg-lagoon/10 text-lagoon rounded-3xl border border-lagoon/30 p-4 text-center font-bold text-sm flex items-center justify-center gap-2">
-            <span>🎉</span> 大家都互不相欠，帳目已結清！
+            <CircleCheck class="h-5 w-5 shrink-0" :stroke-width="1.75" aria-hidden="true" /> 大家都互不相欠，帳目已結清！
         </div>
     </div>
 
@@ -557,7 +558,7 @@ defineExpose({ loadData: loadExpensesData })
                     <label class="field-label">分類</label>
                     <div class="grid grid-cols-4 gap-2">
                         <button v-for="cat in expenseCategories" :key="cat.name" @click="expenseForm.category = cat.name" class="chip !flex-col !gap-0.5 !px-2 !py-2 !rounded-2xl justify-center" :class="expenseForm.category === cat.name ? 'chip-active' : ''">
-                            <span class="text-xl block">{{ cat.icon }}</span>
+                            <component :is="cat.icon" class="h-5 w-5" :stroke-width="1.75" aria-hidden="true" />
                             <span class="text-[10px] font-bold">{{ cat.name }}</span>
                         </button>
                     </div>

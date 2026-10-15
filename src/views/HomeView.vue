@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from '../lib/supabaseClient'
 import { friendlyError } from '../lib/errorMessage'
 import { getTripStatus, parseLocalDate } from '../lib/tripStatus'
+import { Luggage, BellRing, Map as MapIcon } from 'lucide-vue-next'
 
 const router = useRouter()
 const trips = ref<any[]>([])
@@ -206,7 +207,7 @@ function goToDetail(id: number | string) {
 
       <!-- 已登入：新增行程輸入列 -->
       <div v-if="user" class="card mb-14 flex items-center gap-2 !rounded-full p-1.5 pl-5 animate-rise" style="animation-delay: 220ms">
-        <span class="text-lg" aria-hidden="true">🧳</span>
+        <Luggage class="h-5 w-5 shrink-0 text-ink-soft" :stroke-width="1.75" aria-hidden="true" />
         <input
           v-model="newTripName"
           placeholder="下一趟要去哪裡？"
@@ -227,7 +228,7 @@ function goToDetail(id: number | string) {
             登入即可解鎖完整的行程規劃、共同編輯與智慧分帳功能，開始您的專屬旅程。
           </p>
           <button @click="login" class="btn-primary !px-7 !py-3 !text-base">
-            <span aria-hidden="true">🛎️</span> 按下呼叫鈴
+            <BellRing class="h-4 w-4" :stroke-width="2" aria-hidden="true" /> 按下呼叫鈴
           </button>
         </div>
 
@@ -304,7 +305,7 @@ function goToDetail(id: number | string) {
         </div>
 
         <div v-if="trips.length === 0 && !fetchError" class="mt-6 flex flex-col items-center rounded-2xl border-2 border-dashed border-ink/15 py-14 text-center animate-rise">
-          <div class="mb-4 text-4xl">🗺️</div>
+          <MapIcon class="mb-4 h-10 w-10 text-faint" :stroke-width="1.5" aria-hidden="true" />
           <p class="font-display text-lg font-bold text-ink">還沒有任何行程</p>
           <p class="mt-1 text-sm text-muted">在上方輸入名稱，開始規劃第一趟旅程</p>
         </div>

@@ -166,10 +166,17 @@
   @apply h-px w-full bg-ink/12;
 }
 
+/* 觸控裝置隱藏捲軸；滑鼠裝置顯示細捲軸，否則電腦上看不出、也拖不到後面的項目 */
 @utility no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  &::-webkit-scrollbar { display: none; }
+  @media (pointer: coarse) {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+  @media (pointer: fine) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-faint) transparent;
+  }
 }
 
 /* =========================================================

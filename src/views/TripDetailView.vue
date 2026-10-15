@@ -4,6 +4,8 @@
   import { supabase } from '../lib/supabaseClient'
   import { getTripStatus, parseLocalDate, todayISO } from '../lib/tripStatus'
   import { friendlyError } from '../lib/errorMessage'
+  import { wheelToHorizontal } from '../lib/wheelScroll'
+  import { Share2, Users } from 'lucide-vue-next'
 
   // 引入新拆分的組件
   import ItineraryTab from '../components/trip/ItineraryTab.vue'
@@ -295,9 +297,9 @@
         <span class="transition-transform duration-300 group-hover:-translate-x-1">←</span> 我的旅程
       </button>
       <div v-if="isEditMode && loadState === 'ok'" class="flex items-center gap-2">
-        <button @click="showShareModal = true" class="btn-ghost !px-3.5 !py-2 !text-xs">🔗 分享</button>
+        <button @click="showShareModal = true" class="btn-ghost !px-3.5 !py-2 !text-xs"><Share2 class="h-3.5 w-3.5" :stroke-width="2" aria-hidden="true" /> 分享</button>
         <button @click="showMembersModal = true" class="btn-ghost !px-3.5 !py-2 !text-xs">
-          👥 <span class="font-mono text-flare">{{ tripMembers.length }}</span>
+          <Users class="h-3.5 w-3.5" :stroke-width="2" aria-hidden="true" /> <span class="font-mono text-flare">{{ tripMembers.length }}</span>
         </button>
         <button @click="openEditModal" class="btn-icon !h-9 !w-9" aria-label="編輯行程資訊">✎</button>
       </div>
@@ -396,7 +398,7 @@
 
     <!-- 日期篩選頁籤 (僅在行程與景點頁面顯示) -->
     <div v-if="activeTab === 'itinerary' || activeTab === 'attractions'" class="sticky top-0 z-30 mt-6 mb-4 bg-paper/85 backdrop-blur-md">
-      <div class="mx-auto flex max-w-2xl gap-2 overflow-x-auto px-5 py-3 no-scrollbar">
+      <div class="mx-auto flex max-w-2xl gap-2 overflow-x-auto px-5 py-3 no-scrollbar" @wheel="wheelToHorizontal">
         <button @click="selectedDate = ''" class="chip" :class="{ 'chip-active': selectedDate === '' }">全部</button>
         <button v-for="date in uniqueDates" :key="date" @click="selectedDate = date" class="chip font-mono" :class="{ 'chip-active': selectedDate === date }">
           {{ date.slice(5).replace('-', '/') }}<span v-if="date === todayISO()" class="ml-0.5 text-[10px]">·今天</span>

@@ -4,7 +4,9 @@
   import { supabase } from '../lib/supabaseClient'
 import { friendlyError } from '../lib/errorMessage'
 import { safeUrl } from '../lib/safeUrl'
+import { MapPin, BedDouble } from 'lucide-vue-next'
   import { getTripStatus, parseLocalDate } from '../lib/tripStatus'
+  import { wheelToHorizontal } from '../lib/wheelScroll'
 
   // 唯讀分享頁：不需登入，資料只來自 RPC get_shared_trip (不含記帳、Email)。
   // 刻意不 import ItineraryTab / AttractionTab / AccommodationTab (它們直接查資料表，未登入會被權限擋)。
@@ -228,9 +230,9 @@ import { safeUrl } from '../lib/safeUrl'
         >{{ s.label }}</button>
       </div>
 
-      <!-- 日期篩選 (作用於每日行程與路線) -->
+      <!-- 日期篩選 (作用於每日行程) -->
       <div v-if="section !== 'places'" class="sticky top-0 z-30 mt-3 mb-4 bg-paper/85 backdrop-blur-md">
-        <div class="mx-auto flex max-w-2xl gap-2 overflow-x-auto px-5 py-3 no-scrollbar">
+        <div class="mx-auto flex max-w-2xl gap-2 overflow-x-auto px-5 py-3 no-scrollbar" @wheel="wheelToHorizontal">
           <button @click="selectedDate = ''" class="chip" :class="{ 'chip-active': selectedDate === '' }">全部</button>
           <button
             v-for="date in uniqueDates"
@@ -309,7 +311,7 @@ import { safeUrl } from '../lib/safeUrl'
                   target="_blank"
                   rel="noopener"
                   class="btn-ghost mt-4 inline-flex !px-4 !py-2 !text-xs"
-                >📍 在地圖開啟 ↗</a>
+                ><MapPin class="h-3.5 w-3.5" :stroke-width="2" aria-hidden="true" /> 在地圖開啟 ↗</a>
               </article>
             </div>
           </section>
@@ -323,7 +325,7 @@ import { safeUrl } from '../lib/safeUrl'
             <div v-if="accommodations.length === 0" class="card p-6 text-center text-sm text-muted">還沒有住宿資料。</div>
             <div class="stagger space-y-4">
               <article v-for="(h, i) in accommodations" :key="h.id ?? i" :style="`--i: ${i}`" class="card p-5">
-                <h3 class="font-display break-all text-xl font-bold text-ink">🏨 {{ h.name }}</h3>
+                <h3 class="font-display inline-flex items-center gap-2 break-all text-xl font-bold text-ink"><BedDouble class="h-4 w-4 shrink-0 text-flare" :stroke-width="1.75" aria-hidden="true" />{{ h.name }}</h3>
                 <p v-if="h.address" class="mt-1 text-sm text-ink-soft">{{ h.address }}</p>
                 <p v-if="h.station" class="mt-0.5 text-xs text-muted">最近車站：{{ h.station }}</p>
 
@@ -351,7 +353,7 @@ import { safeUrl } from '../lib/safeUrl'
                   target="_blank"
                   rel="noopener"
                   class="btn-ghost mt-4 inline-flex !px-4 !py-2 !text-xs"
-                >📍 在地圖開啟 ↗</a>
+                ><MapPin class="h-3.5 w-3.5" :stroke-width="2" aria-hidden="true" /> 在地圖開啟 ↗</a>
               </article>
             </div>
           </section>
