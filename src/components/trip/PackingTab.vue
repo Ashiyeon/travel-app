@@ -24,7 +24,7 @@ const CUSTOM_CATEGORY = '__custom__'
 const DEFAULT_CATEGORY = '其他'
 const PRESET_CATEGORIES = ['證件', '金錢', '電子產品', '衣物', '盥洗', '藥品', '其他']
 
-// 常用範本（assignee 一律不指定，讓旅伴自己分配）
+// 常用範本（套用時依目前分頁指定給某人或每個旅伴各一份，見 applyTemplate）
 const TEMPLATE_ITEMS: { name: string; category: string }[] = [
   { name: '護照', category: '證件' },
   { name: '機票/電子登機證', category: '證件' },
@@ -256,12 +256,30 @@ async function handleDelete() {
 }
 
 // --- 套用範本 ---
+// 範本要套給誰：人名分頁 → 那個人；未指定分頁 → 不指定；全部 → 每個旅伴各一份（沒有旅伴時不指定）
+const templateTargets = computed<(string | null)[]>(() => {
+  if (filter.value === FILTER_NONE) return [null]
+  if (filter.value !== FILTER_ALL) return [filter.value]
+  const members = props.tripMembers || []
+  return members.length > 0 ? [...members] : [null]
+})
+
+const templateButtonLabel = computed(() => {
+  if (filter.value === FILTER_ALL) return (props.tripMembers?.length ?? 0) > 0 ? '幫每個人套用常用範本' : '套用常用範本'
+  if (filter.value === FILTER_NONE) return '套用常用範本（未指定）'
+  return `幫 ${filter.value} 套用常用範本`
+})
+
 async function applyTemplate() {
   if (isDemo.value || applyingTemplate.value) return
-  const existing = new Set(items.value.map(i => i.name.trim().toLowerCase()))
-  const toInsert = TEMPLATE_ITEMS
-    .filter(t => !existing.has(t.name.trim().toLowerCase()))
-    .map(t => ({ trip_id: props.tripId, name: t.name, category: t.category, assignee: null }))
+  // 同一個人已經有的同名項目不重複新增
+  const key = (assignee: string | null, name: string) => `${assignee ?? ''}\u0000${name.trim().toLowerCase()}`
+  const existing = new Set(items.value.map(i => key(i.assignee, i.name)))
+  const toInsert = templateTargets.value.flatMap(assignee =>
+    TEMPLATE_ITEMS
+      .filter(t => !existing.has(key(assignee, t.name)))
+      .map(t => ({ trip_id: props.tripId, name: t.name, category: t.category, assignee }))
+  )
   if (toInsert.length === 0) return alert('範本裡的項目都已經在清單中了')
 
   applyingTemplate.value = true
@@ -313,7 +331,7 @@ defineExpose({ loadData, items })
       <p class="text-muted mb-1">{{ props.isEditMode ? '還沒有任何要帶的東西' : '行李清單還是空的' }}</p>
       <p v-if="props.isEditMode" class="text-faint text-xs mb-4">可以一鍵帶入常用項目，再慢慢調整</p>
       <div v-if="props.isEditMode" class="flex flex-wrap justify-center gap-2">
-        <button @click="applyTemplate" class="btn-primary" :disabled="applyingTemplate">{{ applyingTemplate ? '套用中…' : '套用常用範本' }}</button>
+        <button @click="applyTemplate" class="btn-primary" :disabled="applyingTemplate">{{ applyingTemplate ? '套用中…' : templateButtonLabel }}</button>
         <button @click="openForm()" class="btn-ghost">自己新增</button>
       </div>
     </div>
@@ -327,7 +345,7 @@ defineExpose({ loadData, items })
       </div>
 
       <div v-if="props.isEditMode" class="mb-3 flex justify-end">
-        <button @click="applyTemplate" class="btn-ghost !py-1.5 !text-xs" :disabled="applyingTemplate">{{ applyingTemplate ? '套用中…' : '＋ 套用常用範本' }}</button>
+        <button @click="applyTemplate" class="btn-ghost !py-1.5 !text-xs" :disabled="applyingTemplate">{{ applyingTemplate ? '套用中…' : '＋ ' + templateButtonLabel }}</button>
       </div>
 
       <div v-if="groups.length === 0" class="text-center py-16 text-faint">
@@ -378,7 +396,7 @@ defineExpose({ loadData, items })
               <span
                 class="tag shrink-0"
                 :class="it.assignee ? '!text-aurora !border-aurora/30 !bg-aurora/10' : '!text-faint'"
-              >{{ it.assignee || '各自帶' }}</span>
+              >{{ it.assignee || '未指定' }}</span>
             </li>
           </ul>
         </div>
@@ -414,7 +432,7 @@ defineExpose({ loadData, items })
             <label class="field-label">誰負責帶</label>
             <div class="relative">
               <select v-model="form.assignee" class="field appearance-none">
-                <option value="">未指定（各自帶）</option>
+                <option value="">未指定</option>
                 <option v-for="m in assigneeOptions" :key="m" :value="m">{{ m }}</option>
               </select>
               <div class="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-[10px]">▼</div>
