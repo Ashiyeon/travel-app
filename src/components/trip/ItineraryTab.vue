@@ -27,7 +27,7 @@ const filteredActivities = computed(() => {
   return filtered.sort((a, b) => {
      const timeA = a.start_time || ''
      const timeB = b.start_time || ''
-     return timeA.localeCompare(timeB) || (a.id - b.id)
+     return a.date.localeCompare(b.date) || timeA.localeCompare(timeB) || (a.id - b.id)
   })
 })
 

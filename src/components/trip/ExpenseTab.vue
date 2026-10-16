@@ -394,6 +394,14 @@ const settlementCalculation = computed(() => {
     return { settlement, transactions }
 })
 
+// 每人實際花費：依各筆的分擔名單算出的應付總額（沒參與的支出不會算進去）
+const perPersonSpending = computed(() =>
+    Object.entries(settlementCalculation.value.settlement)
+        .map(([name, s]) => ({ name, amount: Math.round(s.should_pay) }))
+        .filter(p => p.amount > 0)
+        .sort((a, b) => b.amount - a.amount)
+)
+
 watch(() => expenseForm.value.currency, async (newCurrency) => {
     if (newCurrency && showExpenseForm.value) {
         const rate = await fetchExchangeRate(newCurrency)
@@ -429,18 +437,21 @@ defineExpose({ loadData: loadExpensesData })
 
     <!-- 記帳統計 -->
     <div v-if="expenses.length > 0" class="card p-5 mb-6">
-        <div class="grid grid-cols-3 gap-4">
-            <div class="text-center">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="text-center border-r border-ink/10">
                 <p class="eyebrow mb-1">總支出 (TWD)</p>
                 <p class="font-display text-2xl font-bold text-gradient">{{ Math.round(expenses.reduce((sum, e) => sum + calculateAmountTWD(e), 0)) }}</p>
-            </div>
-            <div class="text-center border-l border-r border-ink/10">
-                <p class="eyebrow mb-1">平均每人</p>
-                <p class="font-mono text-xl font-bold text-lagoon">{{ expenses.length > 0 ? Math.round(expenses.reduce((sum, e) => sum + calculateAmountTWD(e), 0) / (new Set(expenses.map(e => e.paid_by)).size || 1)) : 0 }}</p>
             </div>
             <div class="text-center">
                 <p class="eyebrow mb-1">記帳筆數</p>
                 <p class="font-mono text-xl font-bold text-ink">{{ expenses.length }}</p>
+            </div>
+        </div>
+        <div v-if="perPersonSpending.length > 0" class="mt-4 pt-4 border-t border-ink/10">
+            <p class="eyebrow mb-2">每人實際花費 (TWD)</p>
+            <div v-for="p in perPersonSpending" :key="p.name" class="flex justify-between items-center py-1">
+                <span class="text-sm font-medium text-ink">{{ p.name }}</span>
+                <span class="font-mono text-sm font-bold text-lagoon">{{ p.amount.toLocaleString() }}</span>
             </div>
         </div>
     </div>
