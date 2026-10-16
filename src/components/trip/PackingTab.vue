@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../../lib/supabaseClient'
 import { wheelToHorizontal } from '../../lib/wheelScroll'
-import { Luggage } from 'lucide-vue-next'
+import { Luggage, Check } from 'lucide-vue-next'
 
 const props = defineProps<{
   tripId: string | string[]
@@ -109,16 +109,39 @@ const groups = computed(() => {
     .map(([category, list]) => ({
       category,
       list,
+      rows: toRows(list),
       packed: list.filter(i => i.is_packed).length,
     }))
 })
+
+// 「全部」分頁：同分類同名的項目（例如每人各一本護照）合併成一行，右邊列出每個人的勾選；
+// 其他分頁一筆一行
+function toRows(list: PackingItem[]): { key: string; name: string; items: PackingItem[] }[] {
+  if (filter.value !== FILTER_ALL) return list.map(it => ({ key: String(it.id), name: it.name, items: [it] }))
+  const rows = new Map<string, { key: string; name: string; items: PackingItem[] }>()
+  for (const it of list) {
+    const k = it.name.trim().toLowerCase()
+    if (!rows.has(k)) rows.set(k, { key: k, name: it.name, items: [] })
+    rows.get(k)!.items.push(it)
+  }
+  // 名字依旅伴順序排，未指定放最後
+  const order = (a: string | null) => {
+    if (!a) return Number.MAX_SAFE_INTEGER
+    const i = memberChips.value.indexOf(a)
+    return i === -1 ? Number.MAX_SAFE_INTEGER - 1 : i
+  }
+  for (const r of rows.values()) r.items.sort((a, b) => order(a.assignee) - order(b.assignee) || a.id - b.id)
+  return [...rows.values()]
+}
 
 // --- 讀取 ---
 async function loadData() {
   if (isDemo.value) {
     items.value = [
-      { id: 1, name: '護照', category: '證件', assignee: null, is_packed: true },
+      { id: 1, name: '護照', category: '證件', assignee: '小美', is_packed: true },
       { id: 2, name: '電子登機證', category: '證件', assignee: null, is_packed: true },
+      { id: 11, name: '護照', category: '證件', assignee: '大壯', is_packed: false },
+      { id: 12, name: '護照', category: '證件', assignee: '阿明', is_packed: true },
       { id: 3, name: '網卡/eSIM', category: '電子產品', assignee: '小美', is_packed: true },
       { id: 4, name: '轉接頭', category: '電子產品', assignee: '大壯', is_packed: false },
       { id: 5, name: '行動電源', category: '電子產品', assignee: '阿明', is_packed: false },
@@ -361,7 +384,33 @@ defineExpose({ loadData, items })
           </div>
           <div class="hairline"></div>
           <ul>
-            <li v-for="(it, idx) in g.list" :key="it.id" class="flex items-center gap-3 px-4 py-2" :class="idx > 0 ? 'border-t border-ink/5' : ''">
+            <template v-for="(row, idx) in g.rows" :key="row.key">
+            <!-- 合併列（全部分頁、多人各有一份）：點名字切換那個人的勾選；編輯請到個人分頁 -->
+            <li v-if="row.items.length > 1" class="flex items-center gap-3 px-5 py-3" :class="idx > 0 ? 'border-t border-ink/5' : ''">
+              <span
+                class="flex-1 min-w-0 text-base break-all"
+                :class="row.items.every(i => i.is_packed) ? 'line-through text-faint' : 'text-ink font-medium'"
+              >{{ row.name }}</span>
+              <div class="flex flex-wrap justify-end gap-1.5 shrink-0 max-w-[60%]">
+                <button
+                  v-for="it in row.items"
+                  :key="it.id"
+                  type="button"
+                  role="checkbox"
+                  :aria-checked="it.is_packed"
+                  :aria-label="(it.assignee || '未指定') + (it.is_packed ? ' 取消已打包：' : ' 標記已打包：') + it.name"
+                  :disabled="pendingIds.includes(it.id)"
+                  @click="togglePacked(it)"
+                  class="inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                  :class="it.is_packed ? 'border-lagoon bg-lagoon text-card' : 'border-ink/20 bg-card text-ink-soft hover:border-lagoon/60'"
+                >
+                  <Check v-if="it.is_packed" class="h-3 w-3" :stroke-width="3" aria-hidden="true" />
+                  {{ it.assignee || '未指定' }}
+                </button>
+              </div>
+            </li>
+            <template v-else>
+            <li v-for="it in row.items" :key="it.id" class="flex items-center gap-3 px-4 py-2" :class="idx > 0 ? 'border-t border-ink/5' : ''">
               <!-- 勾選框 -->
               <button
                 type="button"
@@ -398,6 +447,8 @@ defineExpose({ loadData, items })
                 :class="it.assignee ? '!text-aurora !border-aurora/30 !bg-aurora/10' : '!text-faint'"
               >{{ it.assignee || '未指定' }}</span>
             </li>
+            </template>
+            </template>
           </ul>
         </div>
       </div>
