@@ -31,6 +31,30 @@ const filteredActivities = computed(() => {
   })
 })
 
+// 依日期分組（「全部」時每天一個區塊）；DAY N 以出發日為第 1 天
+const dailyGroups = computed(() => {
+  const groups: { date: string, label: string, list: any[] }[] = []
+  for (const act of filteredActivities.value) {
+    let g = groups[groups.length - 1]
+    if (!g || g.date !== act.date) {
+      g = { date: act.date, label: dayLabel(act.date), list: [] }
+      groups.push(g)
+    }
+    g.list.push(act)
+  }
+  return groups
+})
+
+function dayLabel(date: string) {
+  const d = new Date(date + 'T00:00:00')
+  if (isNaN(d.getTime())) return date
+  const md = `${d.getMonth() + 1}/${d.getDate()}（週${'日一二三四五六'[d.getDay()]}）`
+  const start = new Date(props.startDateRaw + 'T00:00:00')
+  if (isNaN(start.getTime())) return md
+  const n = Math.round((d.getTime() - start.getTime()) / 86400000) + 1
+  return n >= 1 ? `DAY ${n} · ${md}` : md
+}
+
 function openActivityForm(act?: any) {
   if (act) {
     isEditingActivity.value = true
@@ -105,8 +129,13 @@ defineExpose({ loadData: loadActivitiesData, activities })
         </div>
 
         <template v-else>
+            <section v-for="g in dailyGroups" :key="g.date" class="space-y-4">
+            <div v-if="!props.selectedDate" class="flex items-baseline justify-between pl-1 pt-2">
+                <h2 class="font-display text-lg font-bold text-ink">{{ g.label }}</h2>
+                <span class="eyebrow">{{ g.list.length }} 項</span>
+            </div>
             <div class="stagger space-y-4">
-            <div v-for="(act, idx) in filteredActivities" :key="act.id"
+            <div v-for="(act, idx) in g.list" :key="act.id"
                 @click="props.isEditMode ? openActivityForm(act) : null"
                 :style="{ '--i': idx }"
                 :class="props.isEditMode ? 'cursor-pointer card-hover' : 'cursor-default'"
@@ -150,6 +179,7 @@ defineExpose({ loadData: loadActivitiesData, activities })
                 </div>
             </div>
             </div>
+            </section>
 
             <div v-if="filteredActivities.length === 0" class="text-center py-20 text-faint">
                 <p>這一天還沒有行程喔</p>
