@@ -119,6 +119,15 @@ const issueLabel = (() => {
   return `${d.getFullYear()} ${season}季號`
 })()
 
+// 封面直書標語，前兩字 (一起) 與 together 同為橘色
+const coverChars = ['一', '起', '在', '別', '處']
+
+// 封面期數 (例如 NO.26.10)
+const issueNo = (() => {
+  const d = new Date()
+  return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}`
+})()
+
 // 行程天數 (例如 5 天)
 function tripDays(trip: any) {
   if (!trip.start_date || !trip.end_date) return 0
@@ -171,26 +180,39 @@ function goToDetail(id: number | string) {
   <div class="min-h-dvh px-5 pb-24 pt-[max(env(safe-area-inset-top),1.25rem)] sm:px-8">
     <div class="mx-auto max-w-xl">
 
-      <!-- 刊頭 -->
+      <!-- 封面資訊列：刊名、期號（刊頭交給下面的 ELSEWHERE，這裡只留一條細線） -->
       <header class="animate-fade">
-        <div class="flex items-center justify-between pb-3">
-          <span class="font-display text-lg font-black tracking-wider text-ink">空姐叫我</span>
+        <div class="flex min-h-9 items-center justify-between gap-3 pb-2">
+          <span class="font-display text-[13px] font-black tracking-[0.3em] text-ink">空姐叫我</span>
           <div class="flex items-center gap-3">
-            <span class="eyebrow hidden sm:inline">旅行手帖 · {{ issueLabel }}</span>
-            <button v-if="user" @click="logout" class="btn-ghost !px-4 !py-1.5 !text-xs">登出</button>
+            <span class="font-mono text-[10px] tracking-[0.12em] text-muted" :class="{ '!text-flare': isOffline }">
+              {{ isOffline ? '離線 · 顯示上次的資料' : `NO.${issueNo} · ${issueLabel}` }}
+            </span>
+            <button v-if="user" @click="logout" class="btn-ghost !px-3.5 !py-1 !text-xs">登出</button>
           </div>
         </div>
-        <div class="h-[3px] bg-ink"></div>
-        <div class="mt-[3px] hairline"></div>
+        <div class="h-px bg-ink"></div>
       </header>
 
-      <!-- Hero -->
-      <section class="pb-12 pt-12 sm:pt-16">
-        <p class="eyebrow mb-4 animate-rise">
-          {{ isOffline ? '目前離線 · 顯示上次的資料' : 'TRAVEL JOURNAL' }}
-        </p>
-        <h1 class="font-display text-[clamp(2.6rem,11vw,4.25rem)] font-black leading-[1.15] tracking-tight text-ink animate-rise" style="animation-delay: 80ms">
-          把壓力，<br />丟在不同時區<span class="text-flare">。</span>
+      <!-- Hero：雜誌封面 -->
+      <section class="pb-12 pt-7 sm:pt-10">
+        <!--
+          整組標題放在同一個 SVG（座標寬 1000），任何螢幕寬度比例都一致：
+          - ELSEWHERE 用 Playfair 窄版 (wdth 87.5) 以自然字寬撐滿左欄 900，不做橫向壓縮
+          - 直書五字從刊頭字頂排到 together 的基線，與左欄等高
+          - 顏色互譯：together / 一起 為橘，ELSEWHERE / 在別處 為墨黑
+        -->
+        <h1 class="animate-rise" style="animation-delay: 80ms">
+          <span class="sr-only">Elsewhere, together. 一起在別處。</span>
+          <svg viewBox="0 0 1000 335" class="block w-full overflow-visible" aria-hidden="true">
+            <text x="-4" y="139" fill="var(--color-ink)" font-family="Playfair, serif" font-weight="900" font-size="168"
+              letter-spacing="-2.5" style="font-variation-settings: 'opsz' 96, 'wdth' 87.5">ELSEWHERE</text>
+            <text x="2" y="292" fill="var(--color-flare)" font-family="Playfair, serif" font-style="italic" font-weight="400"
+              font-size="180" style="font-variation-settings: 'opsz' 96">together.</text>
+            <text v-for="(ch, i) in coverChars" :key="ch" x="974.5" :y="64 + i * 55" text-anchor="middle"
+              :fill="i < 2 ? 'var(--color-flare)' : 'var(--color-ink)'"
+              font-family="Noto Serif TC, serif" font-weight="900" font-size="51">{{ ch }}</text>
+          </svg>
         </h1>
 
         <!-- 航線裝飾 -->
