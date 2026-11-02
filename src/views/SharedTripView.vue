@@ -7,6 +7,7 @@ import { safeUrl } from '../lib/safeUrl'
 import { MapPin, BedDouble } from 'lucide-vue-next'
   import { getTripStatus, parseLocalDate } from '../lib/tripStatus'
   import { wheelToHorizontal } from '../lib/wheelScroll'
+  import { sortAttractions } from '../lib/attractionOrder'
 
   // 唯讀分享頁：不需登入，資料只來自 RPC get_shared_trip (不含記帳、Email)。
   // 刻意不 import ItineraryTab / AttractionTab / AccommodationTab (它們直接查資料表，未登入會被權限擋)。
@@ -46,7 +47,7 @@ import { MapPin, BedDouble } from 'lucide-vue-next'
       }
       trip.value = data.trip
       activities.value = Array.isArray(data.activities) ? data.activities : []
-      attractions.value = Array.isArray(data.attractions) ? data.attractions : []
+      attractions.value = sortAttractions(Array.isArray(data.attractions) ? data.attractions : [], activities.value)
       accommodations.value = Array.isArray(data.accommodations) ? data.accommodations : []
     } catch (e: any) {
       errorMsg.value = friendlyError(e?.message)

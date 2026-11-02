@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../../lib/supabaseClient'
+import { sortAttractions } from '../../lib/attractionOrder'
 import { Pencil, Sparkles, Utensils, TrainFront, Clock, Ticket, Navigation, MapPin } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -11,6 +12,8 @@ const props = defineProps<{
 }>()
 
 const attractions = ref<any[]>([])
+// 只拿來決定同一天景點卡片的先後（依行程裡同名項目的時間）
+const activityTimes = ref<any[]>([])
 const showAttractionForm = ref(false)
 const isEditingAttraction = ref(false)
 const editingAttractionId = ref<number | null>(null)
@@ -34,7 +37,7 @@ const filteredAttractions = computed(() => {
   if (props.selectedDate) {
     filtered = filtered.filter(a => a.date === props.selectedDate)
   }
-  return filtered.sort((a, b) => a.id - b.id)
+  return sortAttractions(filtered, activityTimes.value)
 })
 
 function openAttractionForm(attr?: any) {
@@ -107,8 +110,12 @@ async function loadAttractionsData() {
       ]
       return
   }
-  const { data } = await supabase.from('attractions').select('*').eq('trip_id', props.tripId).order('id', { ascending: true })
-  attractions.value = data || []
+  const [attrRes, actRes] = await Promise.all([
+    supabase.from('attractions').select('*').eq('trip_id', props.tripId).order('id', { ascending: true }),
+    supabase.from('activities').select('date,start_time,title').eq('trip_id', props.tripId),
+  ])
+  activityTimes.value = actRes.data || []
+  attractions.value = attrRes.data || []
 }
 
 function parseLines(text: string) {
